@@ -95,7 +95,22 @@ def lbl_to_bac(dataframe, header_map):
     #outd.pop('na')
     return outd
 
-    
+
+def make_dicts(dataframe):
+    """ create unique sample dictionaries from dataframe"""
+    shdr = simple_header(get_headermap(dataframe))
+    mytype = []
+    for items in zip(dataframe[shdrmap['SampleType']],
+                     dataframe[shdrmap['Radiotracer']],
+                     dataframe[shdrmap['PETScanner']]):
+        
+        ritems = [str(x) for x in items]
+        typestr = '-'.join(ritems).replace('-n/a','')
+        mytype.append(typestr)
+    unique_types = set(mytype)
+    return mytype, unique_type
+
+
 def main(infile):
     mrid = {}
     bloodd = {}
