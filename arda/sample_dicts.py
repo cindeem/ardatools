@@ -4,6 +4,8 @@ import dateutil.parser as parser
 import xlrd
 import pandas
 import numpy as np
+import logging
+
 
 def update_existing(dict, tmpdict):
     lblid = tmpdict.keys()[0]
@@ -96,19 +98,68 @@ def lbl_to_bac(dataframe, header_map):
     return outd
 
 
-def make_dicts(dataframe):
-    """ create unique sample dictionaries from dataframe"""
-    shdr = simple_header(get_headermap(dataframe))
-    mytype = []
-    for items in zip(dataframe[shdrmap['SampleType']],
-                     dataframe[shdrmap['Radiotracer']],
-                     dataframe[shdrmap['PETScanner']]):
+def is_bad_protocol(protocol):
+    """ checks the generated protocol tuple generated
+    for database entry errors
+
+    strings should be : 
+        'PET-FDG-Ecat', 'MRI'
+    bad entry results in 'nan-nan-nan'
+    returns True if it is a bad protocol
+    False otherwise
+    """
+    if not all([isinstance(x, unicode) for x in protocol]):
+        return True
+    return False
+    
+def log_error(val, jnk):
+    """ logs a found error
+    includes
+    val (line with error)
+    jnk : current content of line
+    """
+    logging.error('bad protocol, database error, line %d'%val)
+    logging.error(str(jnk.values))
         
-        ritems = [str(x) for x in items]
-        typestr = '-'.join(ritems).replace('-n/a','')
-        mytype.append(typestr)
-    unique_types = set(mytype)
-    return mytype, unique_type
+def make_dicts(dataframe):
+    """ create unique sample dictionaries from dataframe
+
+    Notes
+    =====
+
+    occaisionally someone will input a field improperly
+    resulting in a protocol-type of nan-nan-nan
+    this should generate an error log that can be returned to the
+    database users so they can fix this entry
+
+    """
+    ##!! HACK, need to make a good log output dir
+    now = datetime.datetime.now().strftime('%Y-%b-%d-%H')
+    logging.basicConfig(filename='database_check_errors-%s.log'%now, filemode='w', level=logging.DEBUG)
+    logging.info('Started sample_dicts: check database')
+    shdr = simple_header(get_headermap(dataframe))
+    mytypes = []
+    for val, items in enumerate(zip(dataframe[shdr['SampleType']],
+                                    dataframe[shdr['Radiotracer']],
+                                    dataframe[shdr['PETScanner']])):
+        if is_bad_protocol(items):
+            # print to error log
+            print 'BAD'
+            jnk = dataframe.take([val], axis=0)
+            log_error(val, jnk)
+            continue
+        #ritems = [str(x) for x in items]
+        typestr = '-'.join(items).replace('-n/a','')
+        typestr = typestr.replace('\n','')
+        
+        if 'MRI-' in typestr:
+            print typestr
+            jnk = dataframe.take([val], axis=0)
+            log_error(val, jnk)
+            continue
+        mytypes.append(typestr)
+    unique_types = set(mytypes)
+    return mytypes, unique_types
 
 
 def main(infile):
@@ -212,3 +263,4 @@ if __name__ == '__main__':
     header_map = get_headermap(dataframe)
     lbl2bac = lbl_to_bac(dataframe, header_map)
     bac2lbl = bac_to_lbl(dataframe, header_map)
+    alltypes, typeset = make_dicts(dataframe)
