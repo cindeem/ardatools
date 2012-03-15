@@ -4,6 +4,7 @@ import dateutil.parser as parser
 import xlrd
 import pandas
 import numpy as np
+from collections import defaultdict
 import logging
 
 
@@ -133,7 +134,7 @@ def make_dicts(dataframe):
     database users so they can fix this entry
 
     """
-    ##!! HACK, need to make a good log output dir
+    ##!! HACK, need to update to add a good log output dir
     now = datetime.datetime.now().strftime('%Y-%b-%d-%H')
     logging.basicConfig(filename='database_check_errors-%s.log'%now, filemode='w', level=logging.DEBUG)
     logging.info('Started sample_dicts: check database')
@@ -248,6 +249,39 @@ def make_lbl_bac_dict(infile):
             bac_2_lbl.update({bacid:lblid})
     return lbl_2_bac, bac_2_lbl
 
+
+def good_header_map(header_map):
+    """
+    given the expected header_map, compares to new header_map to see if anything has changed
+    """
+    orig_header_map =\
+    {u'Age at Scan': 5,
+     u'CTDI': 13,
+     u'Dementia Type': 15,
+     u'Diagnosis': 14,
+     u'FAIL Reason': 18,
+     u'Injected Dose': 12,
+     u'Notes': 16,
+     u'PET Scanner': 11,
+     u'Patient Info::BAC ID': 1,
+     u'Patient Info::Date of Birth': 3,
+     u'Patient Info::LBNL ID': 0,
+     u'Patient Info::Other ID': 2,
+     u'Patient Info::Patient Notes': 4,
+     u'Protocols::Protocol Name': 8,
+     u'QC': 17,
+     u'Radiotracer': 10,
+     u'Sample Date': 6,
+     u'Sample Protocol': 7,
+     u'Sample Type': 9}
+
+    baseline = defaultdict(int, orig_header_map)
+    if not baseline == header_map:
+        return False
+    return True
+
+
+
 if __name__ == '__main__':
 
     try:
@@ -264,3 +298,4 @@ if __name__ == '__main__':
     lbl2bac = lbl_to_bac(dataframe, header_map)
     bac2lbl = bac_to_lbl(dataframe, header_map)
     alltypes, typeset = make_dicts(dataframe)
+    print good_header_map(header_map)
