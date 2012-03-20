@@ -148,6 +148,7 @@ def make_dicts(dataframe):
             print 'BAD'
             jnk = dataframe.take([val], axis=0)
             log_error(val, jnk)
+            mytypes.append('NA')
             continue
         #ritems = [str(x) for x in items]
         typestr = '-'.join([x.upper() for x in items]).replace('-N/A','')
@@ -157,75 +158,11 @@ def make_dicts(dataframe):
             print typestr
             jnk = dataframe.take([val], axis=0)
             log_error(val, jnk)
+            mytypes.append('NA')
             continue
         mytypes.append(typestr)
     unique_types = set(mytypes)
     return mytypes, unique_types
-
-
-def main(infile):
-    mrid = {}
-    bloodd = {}
-    pibd = {}
-    fdgd = {}
-    fmtd = {}
-    racd = {}
-    cfnd = {}
-    salivad = {}
-    wb = xlrd.open_workbook(infile)
-    sheet = wb.sheet_by_index(0)
-    nrows = sheet.nrows
-
-    header_map = get_header_map(sheet.row_slice(0))
-
-    for rown in range(1,nrows):
-        tmprow = sheet.row_slice(rown)
-        sampletype = tmprow[header_map['Sample Type']].value.replace('\n', '')
-        if sampletype == '':
-            print rown, lblid
-            continue        
-        lblid = tmprow[header_map['LBNL ID']].value.upper()
-        bacid = tmprow[header_map['Patient Info::BAC ID']].value.upper()
-        dob = xlrd.xldate_as_tuple(tmprow[header_map['Patient Info::Date of Birth']].value,0)
-        dob = '-'.join(['%d'%x for x in dob[:3]])
-        sampledate = xlrd.xldate_as_tuple(tmprow[header_map['Sample Date']].value,0)
-        sampledate = '-'.join(['%d'%x for x in sampledate[:3]])
-        
-        pettype = tmprow[header_map['Radiotracer']].value
-        tmpdict = {lblid:[sampledate,dob,bacid]}
-        
-        if sampletype == 'MRI':
-            update_dict(mrid, tmpdict)
-            
-        elif sampletype.upper() == 'BLOOD':
-            update_dict(bloodd, tmpdict)
-            #bloodd.update({lblid:[sampledate,dob,bacid]})
-            #print line
-        elif sampletype == 'PET':
-            if 'PIB' in pettype.upper():
-                update_dict(pibd, tmpdict)
-                #pibd.update({lblid:[sampledate,dob,bacid]})
-            elif 'FDG' in pettype:
-                update_dict(fdgd, tmpdict)
-                #fdgd.update({lblid:[sampledate,dob,bacid]})
-            elif 'FMT' in pettype:
-                update_dict(fmtd, tmpdict)
-                #fmtd.update({lblid:[sampledate,dob,bacid]})
-            elif 'RAC' in pettype:
-                update_dict(racd, tmpdict)
-                #racd.update({lblid:[sampledate,dob,bacid]})
-            elif 'CFN' in pettype:
-                update_dict(cfnd, tmpdict)
-                #cfnd.update({lblid:[sampledate,dob,bacid]})
-            else:
-                print 'pettype: ', pettype, ' NOT FOUND'
-        elif sampletype.upper() == 'SALIVA':
-            update_dict(salivad, tmpdict)
-            #salivad.update({lblid:[sampledate,dob,bacid]})
-        else:
-            print 'sampletype ', sampletype, ' NOT FOUND'
-            print rown
-    return (mrid ,bloodd, pibd ,fdgd ,fmtd ,racd ,cfnd ,salivad) 
 
 
 def make_lbl_bac_dict(infile):
@@ -302,10 +239,43 @@ def generate_sampletype_dict(dataframe, typedict, sampletype):
     sampledict = {}
     for val in typedict[sampletype]:
         values = dataframe.ix[val]
-        lblid, bacid, age, dob, date = values[0], values[1], values[5], values[3], values[6]
-        sampledict.setdefault(lblid, []).append([bacid, age, dob, date])
+        lblid, bacid, age, dob, date,qc = values[0], values[1], values[5], values[3], values[6],values[-2]
+        sampledict.setdefault(lblid, []).append([bacid, age, dob, date,qc])
     return sampledict
 
+
+def check_dir(indir, glob=False):
+    """ check for exsistence of directory indir
+    if glob == True, tries to match pattern
+    """
+    if not glob:
+        return os.path.isdir(indir)
+    else:
+        result = glob(indir)
+        if len(result) == 1:
+            return True
+        else:
+            print len(result), 'results for ', indir
+            return False
+            
+
+def check_dict_repo(dict, type):
+    """ given a sample dict of type type ('MRI') 
+    lblid->[[bacid, age, dob, date,qc],
+    [bacid, age, dob, date,qc]], match to info in repository (arda)
+    """
+    arda = '/home/jagust/arda/lblid'
+    for lblid, events in sorted(dict.items()):
+        subdir = os.path.join(arda,lblid)
+        if not check_dir(subdir):
+            log_error(int(lblid[1:].replace('-','')), 'missing subdir' + lblid)
+            continue
+        for event in events:
+            bacid, age, dob, date,qa = event
+            if not qa.upper() == 'OK':
+                continue
+            event_dir = os.path.join(subdir, '-'.join([type, date.strftime('%b')])) 
+              
 
 """
 Notes about Pandas
@@ -334,3 +304,4 @@ if __name__ == '__main__':
     print good_header_map(header_map)
     typed = rows_for_types(alltypes, typeset)
     mrid = generate_sampletype_dict(dataframe, typed, 'MRI')
+    
