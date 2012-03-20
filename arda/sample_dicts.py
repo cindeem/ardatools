@@ -6,7 +6,7 @@ import pandas
 import numpy as np
 from collections import defaultdict
 import logging
-
+from collections import defaultdict
 
 def update_existing(dict, tmpdict):
     lblid = tmpdict.keys()[0]
@@ -293,6 +293,20 @@ def rows_for_types(alltypes, types):
     return outd
         
 
+def generate_sampletype_dict(dataframe, typedict, sampletype):
+    """ given the dataframe and the indicies of a specific
+    sample type (stypedict['PET-RAC-ECAT'] = [3,5,...]), 
+    create a new dictionary holding
+    LBLID [0], BACID [1], Age at Scan[5], DOB[3], Sample Date[6], 
+    QC[-2]"""
+    sampledict = {}
+    for val in typedict[sampletype]:
+        values = dataframe.ix[val]
+        lblid, bacid, age, dob, date = values[0], values[1], values[5], values[3], values[6]
+        sampledict.setdefault(lblid, []).append([bacid, age, dob, date])
+    return sampledict
+
+
 """
 Notes about Pandas
 
@@ -319,3 +333,4 @@ if __name__ == '__main__':
     alltypes, typeset = make_dicts(dataframe)
     print good_header_map(header_map)
     typed = rows_for_types(alltypes, typeset)
+    mrid = generate_sampletype_dict(dataframe, typed, 'MRI')
