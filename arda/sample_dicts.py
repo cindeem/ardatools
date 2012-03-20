@@ -1,4 +1,5 @@
-import sys
+import sys, os
+from glob import glob
 import datetime
 import dateutil.parser as parser
 import xlrd
@@ -113,15 +114,21 @@ def is_bad_protocol(protocol):
         return True
     return False
     
-def log_error(val, jnk):
-    """ logs a found error
+def log_dberror(val, jnk):
+    """ logs a found error in output from database
     includes
     val (line with error)
     jnk : current content of line
     """
     logging.error('bad protocol, database error, line %d'%val)
     logging.error(str(jnk.values))
-        
+
+def log_dbrepo_error(lblid, error, eventtype):
+    """ logs an error found trying to match database report to 
+    events found in repository"""
+    logging.error(' '.join(['db repo mistmatch',eventtype,lblid,error]))
+
+
 def make_dicts(dataframe):
     """ create unique sample dictionaries from dataframe
 
@@ -147,7 +154,7 @@ def make_dicts(dataframe):
             # print to error log
             print 'BAD'
             jnk = dataframe.take([val], axis=0)
-            log_error(val, jnk)
+            log_dberror(val, jnk)
             mytypes.append('NA')
             continue
         #ritems = [str(x) for x in items]
@@ -157,7 +164,7 @@ def make_dicts(dataframe):
         if 'MRI-' in typestr:
             print typestr
             jnk = dataframe.take([val], axis=0)
-            log_error(val, jnk)
+            log_dberror(val, jnk)
             mytypes.append('NA')
             continue
         mytypes.append(typestr)
@@ -240,15 +247,16 @@ def generate_sampletype_dict(dataframe, typedict, sampletype):
     for val in typedict[sampletype]:
         values = dataframe.ix[val]
         lblid, bacid, age, dob, date,qc = values[0], values[1], values[5], values[3], values[6],values[-2]
+        lblid = lblid.replace('\n', '')
         sampledict.setdefault(lblid, []).append([bacid, age, dob, date,qc])
     return sampledict
 
 
-def check_dir(indir, glob=False):
+def check_dir(indir, isglob=False):
     """ check for exsistence of directory indir
-    if glob == True, tries to match pattern
+    if isglob == True, tries to match pattern
     """
-    if not glob:
+    if not isglob:
         return os.path.isdir(indir)
     else:
         result = glob(indir)
@@ -268,14 +276,19 @@ def check_dict_repo(dict, type):
     for lblid, events in sorted(dict.items()):
         subdir = os.path.join(arda,lblid)
         if not check_dir(subdir):
-            log_error(int(lblid[1:].replace('-','')), 'missing subdir' + lblid)
+            log_dbrepo_error(lblid, 'arda missing subdir' + lblid,type)
             continue
         for event in events:
             bacid, age, dob, date,qa = event
-            if not qa.upper() == 'OK':
+            qa = str(qa)
+            if 'FAIL' in qa:
                 continue
-            event_dir = os.path.join(subdir, '-'.join([type, date.strftime('%b')])) 
-              
+            print 'passed qa'
+            event_dir = os.path.join(subdir, '-'.join([type, date.strftime('%b-%d-%Y'),'*'])) 
+            if not check_dir(event_dir, isglob=True):           
+	        log_dbrepo_error(lblid, 'missing event dir' + event_dir,type)
+            else:
+                print event_dir
 
 """
 Notes about Pandas
@@ -304,4 +317,6 @@ if __name__ == '__main__':
     print good_header_map(header_map)
     typed = rows_for_types(alltypes, typeset)
     mrid = generate_sampletype_dict(dataframe, typed, 'MRI')
-    
+    check_dict_repo(mrid, 'MRI')
+    fdgd = generate_sampletype_dict(dataframe, typed, 'PET-FDG-ECAT')
+    check_dict_repo(fdgd, 'FDG') 
