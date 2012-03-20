@@ -150,7 +150,7 @@ def make_dicts(dataframe):
             log_error(val, jnk)
             continue
         #ritems = [str(x) for x in items]
-        typestr = '-'.join(items).replace('-n/a','')
+        typestr = '-'.join([x.upper() for x in items]).replace('-N/A','')
         typestr = typestr.replace('\n','')
         
         if 'MRI-' in typestr:
@@ -281,6 +281,25 @@ def good_header_map(header_map):
     return True
 
 
+def rows_for_types(alltypes, types):
+    """ Given a specific set of types, return 
+        a dict of type->indicies such that the 
+        indicies of the alltypes match type"""
+    outd = {}
+    alltypes = np.array(alltypes)
+    allind = np.indices(alltypes.shape).squeeze()
+    for item in types:
+        outd[item] = allind[alltypes == item]
+    return outd
+        
+
+"""
+Notes about Pandas
+
+dataframe.ix[val] indexes the val row of the data frame
+
+
+"""
 
 if __name__ == '__main__':
 
@@ -299,3 +318,4 @@ if __name__ == '__main__':
     bac2lbl = bac_to_lbl(dataframe, header_map)
     alltypes, typeset = make_dicts(dataframe)
     print good_header_map(header_map)
+    typed = rows_for_types(alltypes, typeset)
