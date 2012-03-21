@@ -1,9 +1,9 @@
 import sys, os, re
+import shutil
 import datetime
 sys.path.insert(0,'/home/jagust/cindeem/tmpgit/cindeem-nibabel')
 import nibabel.ecat as ecat
 from glob import glob
-from time import ctime
 import hashlib
 import filecmp
 import json
@@ -159,6 +159,17 @@ def make_outdirname(petframes, tracer='', arda='/home/jagust/arda/lblid'):
     return outdir
 
 
+def update_outdir(outdir, clobber=True):
+    """ checks for outdir,
+    if exists and clobber(default True), empties
+    else creates
+    """
+    if os.path.isdir(outdir) and clobber:
+        shutil.unlink(outdir)
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir) #in case multiple level dir
+    
+
 
 if __name__ == '__main__':
     petfiles = ['/home/jagust/cindeem/LBLSYNC/finalPET/finalPET/'\
@@ -166,3 +177,5 @@ if __name__ == '__main__':
     outdir = make_outdirname(petfiles, tracer='PIB')
     expected = '/home/jagust/arda/lblid/B11-255/PIB-2011-Jun-15-14'
     testing.assert_equal(expected, outdir)
+    md5digest = md5file(petfiles[0])
+    testing.assert_equal('7636b13b4bd7ff645371804d9410f02a',md5digest)
