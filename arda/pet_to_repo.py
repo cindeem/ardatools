@@ -1,5 +1,4 @@
-import sys
-import os
+import sys, os, re
 sys.path.insert(0,'/home/jagust/cindeem/src/pynifti-git')
 import nifti.ecat as ecat
 from glob import glob
@@ -111,7 +110,19 @@ def check_hash(filelist, jsonfile):
     else:
         return True, orig_jsondict
 
-
+def get_subid(infile):
+    """ parse filepath string like this:
+    /home/to/data/B06-235/seed_ts_dmn_march2012/RSFC/3_corrZ.nii.gz
+    with regular expression [B][0-9]{2}\-[0-9]{3}
+    to get subject ID  B06-235
+    """
+    m = re.search('[B][0-9]{2}\-[0-9]{3}',infile)
+    if m is None:
+        print 'subid not found in %s'%infile
+        return None
+    else:
+        return m.group(0)
+     
         
 def gen_recon_fname(dict, tracer=''):
     """given a dict of json names
@@ -126,3 +137,22 @@ def gen_recon_fname(dict, tracer=''):
     lastmodtime = ctime(lastmod).replace(' ','_').replace(':','-')
     outfname = '%sreconnotes_%s.txt'%(tracer, lastmodtime)
     return outfname
+
+
+def make_outdirname(petframes, tracer='', arda='/home/jagust/arda/lblid'):
+    """ given list of subjects pet files
+    create full <dated> path
+    to arda directory"""
+    # file structure
+    # /home/jagust/cindeem/LBLSYNC/finalPET/finalPET/B11-255/pib/recon
+    # /B11_255-43D52D91000071FC-de.v
+    subid = os.path.split(os.path.split(subdir)[0])[1]
+    hdr = ecat.load(petframes[0])[0].get_header()
+    scantime = ctime(int(hdr['scan_start_time'])).split()
+    petdate = '-'.join([scantime[1],
+                        scantime[2],
+                        scantime[-1],
+                        scantime[3][:2]])
+    petdir = tracer + petdate
+    subpetdir = os.path.join(subid, petdir)
+    return subpetdir
