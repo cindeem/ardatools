@@ -70,4 +70,59 @@ def md5file(filename, excludeline="", includeline=""):
         for chunk in iter(lambda: f.read(blocksz), ''): 
          m.update(chunk)
     return m.hexdigest()
+
+
+def check_hash(filelist, jsonfile):
+    """given a file list, generate dictionary of md5 hashes
+    for each file, check for existing json file, load and
+    compare dicts
+
+    Parameters
+    ----------
+    filelist : list of datfiles
+
+    jsonfile : filename of json file to check against
+
+    Returns
+    -------
+    hashmatch : Bool
+        True if hash dictionaries are equal
+        False if no jsonfile or dict not equal
+    
+    jsondict  : dict
+        dictionary that can be written to jsonfile
+    """
+    jsondict = {}
+    for f in filelist:
+        filehash = md5file(f)
+        jsondict.update({f: filehash})
+    
+    if not os.path.exists(jsonfile):
+        # json was never created
+        hashmatch = False
+        return hashmatch, jsondict
+
+    else:
+        orig_jsondict = load_json(jsonfile)
+
+    if not orig_jsondict == jsondict:
+        # new files have different md5hash
+        return False, jsondict
+    else:
+        return True, orig_jsondict
+
+
         
+def gen_recon_fname(dict, tracer=''):
+    """given a dict of json names
+    find the last mod date
+    add tracer and moddate to filename
+    """
+    lastmod = 0
+    for f in dict.keys():
+        st = os.stat(f)
+        if st.st_mtime > lastmod:
+            lastmod = st.st_mtime
+    lastmodtime = ctime(lastmod).replace(' ','_').replace(':','-')
+    outfname = '%sreconnotes_%s.txt'%(tracer, lastmodtime)
+    return outfname
