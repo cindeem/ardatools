@@ -159,7 +159,7 @@ def make_dicts(dataframe):
             continue
         #ritems = [str(x) for x in items]
         typestr = '-'.join([x.upper() for x in items]).replace('-N/A','')
-        typestr = typestr.replace('\n','')
+        typestr = typestr.strip('\n')
         
         if 'MRI-' in typestr:
             print typestr
@@ -181,7 +181,7 @@ def make_lbl_bac_dict(infile):
     header_map = get_header_map(sheet.row_slice(0))
     for rown in range(1,nrows):
         tmprow = sheet.row_slice(rown)
-        lblid = tmprow[header_map['LBNL ID']].value.upper().replace('\n','')
+        lblid = tmprow[header_map['LBNL ID']].value.upper().strip('\n')
         bacid = tmprow[header_map['Patient Info::BAC ID']].value.upper().replace('\n','')
 
         if len(lblid) < 2 or len(bacid) < 2:
@@ -247,7 +247,7 @@ def generate_sampletype_dict(dataframe, typedict, sampletype):
     for val in typedict[sampletype]:
         values = dataframe.ix[val]
         lblid, bacid, age, dob, date,qc = values[0], values[1], values[5], values[3], values[6],values[-2]
-        lblid = lblid.replace('\n', '')
+        lblid = lblid.strip('\n')#db allows users to enter newline chars
         sampledict.setdefault(lblid, []).append([bacid, age, dob, date,qc])
     return sampledict
 
