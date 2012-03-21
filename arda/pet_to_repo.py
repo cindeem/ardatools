@@ -1,11 +1,15 @@
 import sys, os, re
-sys.path.insert(0,'/home/jagust/cindeem/src/pynifti-git')
-import nifti.ecat as ecat
+import datetime
+sys.path.insert(0,'/home/jagust/cindeem/tmpgit/cindeem-nibabel')
+import nibabel.ecat as ecat
 from glob import glob
 from time import ctime
 import hashlib
 import filecmp
 import json
+
+# for testing
+import numpy.testing as testing
 
 
 """
@@ -146,13 +150,19 @@ def make_outdirname(petframes, tracer='', arda='/home/jagust/arda/lblid'):
     # file structure
     # /home/jagust/cindeem/LBLSYNC/finalPET/finalPET/B11-255/pib/recon
     # /B11_255-43D52D91000071FC-de.v
-    subid = os.path.split(os.path.split(subdir)[0])[1]
-    hdr = ecat.load(petframes[0])[0].get_header()
-    scantime = ctime(int(hdr['scan_start_time'])).split()
-    petdate = '-'.join([scantime[1],
-                        scantime[2],
-                        scantime[-1],
-                        scantime[3][:2]])
+    subid = get_subid(petframes[0])
+    hdr = ecat.load(petframes[0]).get_header()
+    scantime = datetime.datetime.fromtimestamp(int(hdr['scan_start_time']))
+    petdate = scantime.strftime('-%Y-%b-%d-%H')
     petdir = tracer + petdate
-    subpetdir = os.path.join(subid, petdir)
-    return subpetdir
+    outdir = os.path.join(arda, subid, petdir)
+    return outdir
+
+
+
+if __name__ == '__main__':
+    petfiles = ['/home/jagust/cindeem/LBLSYNC/finalPET/finalPET/'\
+                'B11-255/pib/recon/B11_255-43D52D91000071FC-de.v']
+    outdir = make_outdirname(petfiles, tracer='PIB')
+    expected = '/home/jagust/arda/lblid/B11-255/PIB-2011-Jun-15-14'
+    testing.assert_equal(expected, outdir)
