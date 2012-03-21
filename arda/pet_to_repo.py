@@ -127,21 +127,6 @@ def get_subid(infile):
     else:
         return m.group(0)
      
-        
-def gen_recon_fname(dict, tracer=''):
-    """given a dict of json names
-    find the last mod date
-    add tracer and moddate to filename
-    """
-    lastmod = 0
-    for f in dict.keys():
-        st = os.stat(f)
-        if st.st_mtime > lastmod:
-            lastmod = st.st_mtime
-    lastmodtime = ctime(lastmod).replace(' ','_').replace(':','-')
-    outfname = '%sreconnotes_%s.txt'%(tracer, lastmodtime)
-    return outfname
-
 
 def make_outdirname(petframes, tracer='', arda='/home/jagust/arda/lblid'):
     """ given list of subjects pet files
@@ -170,6 +155,51 @@ def update_outdir(outdir, clobber=True):
         os.makedirs(outdir) #in case multiple level dir
     
 
+def glob_file(globstr, single=True):
+    """globs for file specified by globstr
+    if single is true, expects one file
+    Returns
+    -------
+    exists : bool true if file exists
+
+    file : /path/to/file
+    """
+    result = glob(globstr)
+    if len(result) < 1:
+        return False, None
+    if len(result) == 1:
+        return True, result[0]
+    if single:
+        # expecting only one file, otherwise assume bad
+        return False, None
+    else:
+        # expect more than one, get files
+        return True, result
+
+
+def gen_recon_fname(dict, tracer=''):
+    """given a dict of json names
+    find the last mod date
+    add tracer and moddate to filename
+    """
+    lastmod = 0
+    for f in dict.keys():
+        st = os.stat(f)
+        if st.st_mtime > lastmod:
+            lastmod = st.st_mtime
+    lastmodtime = ctime(lastmod).replace(' ','_').replace(':','-')
+    outfname = '%sreconnotes_%s.txt'%(tracer, lastmodtime)
+    return outfname
+
+## TODO  shold check date of pet files, or check date of
+## recon notes or both
+def check_recon_notes():
+    """ Checks for existence, or change in recon notes
+    1. check for recon notes file in rsync 
+    2. check if exists in arda repo (if not just copy)
+    3. if both files, check equality, updates if new
+    """
+    pass
 
 if __name__ == '__main__':
     petfiles = ['/home/jagust/cindeem/LBLSYNC/finalPET/finalPET/'\
@@ -179,3 +209,8 @@ if __name__ == '__main__':
     testing.assert_equal(expected, outdir)
     md5digest = md5file(petfiles[0])
     testing.assert_equal('7636b13b4bd7ff645371804d9410f02a',md5digest)
+    # test glob_file
+    exists, pth = glob_file('arda/*py')
+    testing.assert_equal(False, exists)
+    exists, pth = glob_file('arda/*py', single=False)
+    testing.assert_equal(True, exists)
