@@ -191,7 +191,10 @@ def make_outdirname(petframes, tracer='', arda='/home/jagust/arda/lblid'):
     hdr = ecat.load(petframes[0]).get_header()
     scantime = datetime.datetime.fromtimestamp(int(hdr['scan_start_time']))
     petdate = scantime.strftime('-%Y-%m-%d-%H')
-    petdir = tracer + petdate
+    if 'NIFD' in petframes[0]:
+        petdir = 'NIFD' + tracer + petdate
+    else:
+        petdir = tracer + petdate
     outdir = os.path.join(arda, subid, petdir)
     return outdir
 
@@ -240,16 +243,26 @@ def get_reconnotes_fromsync(recondir, tracer):
     """given a recondir and tracer in LBLSYNC
     B96-349/fdg/recon/
     get corresponding reconnotes and return"""
-    
+    if 'NIFD' in recondir:
+        nifd = 'NIFD'
+        print 'get_recon notes', recondir
+    else:
+        nifd = ''
     basepath, _ = recondir.split('/%s/'%tracer)    
-    globstr = os.path.join(basepath, '%sreconnotes.txt'%(tracer))
+    globstr = os.path.join(basepath, '%s%sreconnotes.txt'%(nifd,tracer))
     exists, reconf = glob_file(globstr)
     return exists, reconf
 
-def get_real_tracer(recondir, subid):
+def get_real_tracer(recondir):
     """ looks for fdg2, etc and returns real tracertype"""
-    _, tmp = recondir.split('%s/'%subid)
-    real_tracer, _ = tmp.split('/recon')
+    if 'fmt' in recondir:
+        ## fmt has deeper directory structure
+        parts = recondir.split('/')
+        real_tracer = parts[-3]
+        return real_tracer
+    parts = recondir.split('/')
+    real_tracer = parts[-2]
+
     return real_tracer
     
 def gen_recon_fname(flist, destdir, tracer = ''):
@@ -263,7 +276,10 @@ def gen_recon_fname(flist, destdir, tracer = ''):
         if mod > lastmod:
             lastmod = mod
     lastmodtime = lastmod.strftime('%Y-%m-%d')
-    outfname = '%sreconnotes_%s.txt'%(tracer, lastmodtime)
+    if 'NIFD' in flist[0]:
+        outfname = 'NIFD%sreconnotes_%s.txt'%(tracer, lastmodtime)
+    else:
+        outfname = '%sreconnotes_%s.txt'%(tracer, lastmodtime)
     return os.path.join(destdir, outfname)
 
 
@@ -290,7 +306,7 @@ def get_recons_from_sync(tracer, root):
     if tracer == 'fmt':
         globstr = os.path.join(root, 'B*/%s*/recon/4mm'%(tracer))
     else:
-        globstr = os.path.join(root, 'B*/%s*/recon'%(tracer))
+        globstr = os.path.join(root, 'B*/%s*/*recon'%(tracer))
     recons = glob(globstr)
     recons.sort()
     return recons
@@ -310,6 +326,9 @@ if __name__ == '__main__':
     testing.assert_equal(False, exists)
     exists, pth = glob_file('*py', single=False)
     testing.assert_equal(True, exists)
+    # test finding real tracer
+    real_tracer = get_real_tracer('/path/to/subid/fdg2/recon')
+    testing.assert_equal(real_tracer, 'fdg2')
 
     ## check filedates
     filelist = glob('/home/jagust/cindeem/LBLSYNC/finalPET/B11-243/fdg/recon/*.v')
