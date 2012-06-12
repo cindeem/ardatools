@@ -8,7 +8,7 @@ if __name__ == '__main__':
     arda = '/home/jagust/arda/lblid'
     syncdir = '/home/jagust/cindeem/LBLSYNC/finalPET'
     
-    tracer = 'fmt'
+    tracer = 'rac'
     recons = ptr.get_recons_from_sync(tracer, syncdir)
     for recondir in recons[:]:
         subid = ptr.get_subid(recondir)
