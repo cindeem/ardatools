@@ -2,11 +2,11 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os, shutil
-import sys
+import sys, re
 from glob import glob
 import hashlib
 import dicom
-import calendar
+import dateutil.parser as parser
 import tempfile
 import filecmp
 from nipype.interfaces.base import CommandLine
@@ -121,20 +121,93 @@ def get_info_from_dicoms(dict):
         dates.append(d)
         protocols.append(p)
         field.append(f)
+    field = [x.original_string for x in field]
     return set(dates), set(protocols), set(field)
-    
 
+def good_set(set):
+    """ for a given set, make sure only one item
+    else raise error
+    """
+    if not len(set) == 1:
+        print 'Error: ', set
+        return False, None
+    else:
+        return True, set.pop()
+
+def make_dirname(date, visit, field, base = 'MRI'):
+    """ given set of dates from dicoms
+    visit
+    generate outfile name
+    """
+    dt = parser.parse(date)
+    date = dt.strftime('%Y-%m-%d')
+    dirname = '_'.join([base+visit, field, date])
+    return dirname
+    
+def copy_file_withdate(file, dest):
+    cmd = 'cp --preserve=timestamps %s %s'%(file, dest)
+    os.system(cmd)
+
+def copy_files_withdate(files, dest):
+    for f in files:
+        copy_file_withdate(f, dest)
+
+def modification_date(filename):
+    """returns modification date of filename"""
+    t = os.path.getmtime(filename)
+    return datetime.datetime.fromtimestamp(t)
+
+
+def compare_filedates(infile, original_file):
+    """given two files, return of the time stamps
+    are equal"""
+    modtime_infile = modification_date(infile)
+    modtime_orig = modification_date(original_file)
+    return modtime_infile == modtime_orig
+        
+def glob_file(globstr, single=True):
+    """globs for file specified by globstr
+    if single is true, expects one file
+    Returns
+    -------
+    exists : bool true if file exists
+
+    file : /path/to/file
+    """
+    result = glob(globstr)
+    result.sort()
+    if len(result) < 1:
+        return False, None
+    if len(result) == 1 and single:
+        return True, result[0]
+    if single:
+        # expecting only one file, otherwise assume bad
+        return False, None
+    else:
+        # expect more than one, get files
+        return True, result
+
+def get_scannotes_fromsync(raw, visit):
+    """given raw (/LBLSYNC/finalMRI/Bxx-xxx/raw.tgz
+    and visit number  in LBLSYNC
+    B96-349/scannotes.txt, visit = ''
+    get corresponding scannotes and return"""
+    basepath, _ = os.path.split(raw)
+    globstr = os.path.join(basepath, '*scan_notes%s.txt'%(visit))
+    exists, reconf = glob_file(globstr)
+    return exists, reconf
+    
 if __name__ == '__main__':
 
     raw, renamed = tmp_dirs()
     testing.assert_equal(True, os.path.isdir(raw))
     testing.assert_equal(True, 'renamed' in renamed)
+    # test dicom re-naming
     dcm = 'tests/sample.IMA'
     newdcm, plan = rename_dicom(dcm, renamed)
     testing.assert_equal(newdcm, os.path.join(renamed,
                                               'B12-243_localizer_20120604_00001_00001.IMA'))
-    
-    
+        
     # clean up
     shutil.rmtree(raw)
     shutil.rmtree(renamed)
@@ -142,7 +215,22 @@ if __name__ == '__main__':
     visit_number = get_visit_number(raw)
     newnames, dcmd, tmpdir = clean_tgz(raw)
     dates, protocols, field = get_info_from_dicoms(dcmd)
+    # test info from dicoms
     testing.assert_equal(dates, set(['20120604']))
-    testing.assert_equal(field, set(['1.5']))
+    testing.assert_equal(True, 'localizer' in protocols)
+    # test subid
     subid = get_subid(raw)
     testing.assert_equal(subid, 'B12-243')
+    single_field, field = good_set(field)
+    single_date, date = good_set(dates)
+    # test manipulating sets from dicoms
+    testing.assert_equal(True, single_field)
+    testing.assert_equal(field, '1.5')
+    # test generating directory name
+    dirname = make_dirname(date, visit_number, field)
+    testing.assert_equal(dirname, 'MRI_1.5_2012-06-04')
+    exists, sync_reconnotes = get_scannotes_fromsync(raw, visit_number)
+    testing.assert_equal(True, exists)
+    testing.assert_equal(sync_reconnotes,
+                         '/home/jagust/cindeem/LBLSYNC/finalMRI/B12-243/scan_notes.txt')
+    
