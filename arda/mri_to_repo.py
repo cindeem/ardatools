@@ -6,11 +6,13 @@ import sys, re
 from glob import glob
 import hashlib
 import dicom
+import datetime
 import dateutil.parser as parser
 import tempfile
 import filecmp
+import tarfile
 from nipype.interfaces.base import CommandLine
-
+import logging
 
 # for testing
 import numpy.testing as testing
@@ -23,7 +25,7 @@ def get_subid(infile):
     """
     m = re.search('[B][0-9]{2}\-[0-9]{3}',infile)
     if m is None:
-        print 'subid not found in %s'%infile
+        logging.error('subid not found in %s'%infile)
         return None
     else:
         return m.group(0)
@@ -45,7 +47,7 @@ def untar(infile, outdir):
     """ untars given tar archive to outdir"""
     cmd = 'tar  -xzf %s --directory=%s'%(infile, outdir)
     os.system(cmd)
-    os.system('chmod -R 774 %s'%(raw))
+    
 
 
 def rename_dicom(dcm, outdir):
@@ -164,6 +166,16 @@ def compare_filedates(infile, original_file):
     modtime_infile = modification_date(infile)
     modtime_orig = modification_date(original_file)
     return modtime_infile == modtime_orig
+
+def md5file(filename, excludeline="", includeline=""):
+    """Compute md5 hash of the specified file"""
+    m = hashlib.md5()
+    blocksz = 128 * m.block_size
+    with open(filename,'rb') as f: 
+        for chunk in iter(lambda: f.read(blocksz), ''): 
+         m.update(chunk)
+    return m.hexdigest()
+
         
 def glob_file(globstr, single=True):
     """globs for file specified by globstr
@@ -196,6 +208,51 @@ def get_scannotes_fromsync(raw, visit):
     globstr = os.path.join(basepath, '*scan_notes%s.txt'%(visit))
     exists, reconf = glob_file(globstr)
     return exists, reconf
+
+
+def get_behavioral(raw):
+    """ based on raw file, looks for <behavioral>_raw*.tar file(s)
+    and returns"""
+    basepath, raw = os.path.split(raw)
+    behav = raw.replace('tgz', 'tar')
+    globstr = os.path.join(basepath, '*%s'%(behav))
+    exists, reconf = glob_file(globstr,single=False)
+    return exists, reconf
+
+def clean_directory(directory):
+    """ removes directory and contents and then creates
+    new empty directory
+    """
+    shutil.rmtree(directory)
+    os.mkdir(directory)
+
+def renamed_archive_copy(filename, dest):
+    """ given first file of renamed
+    tar archive it to dest"""
+    startdir = os.getcwd()
+    pth, basename = os.path.split(filename)
+    basen = '_'.join(basename.split('_')[:-1])
+    globstr = os.path.join(pth, basen + '*')                     
+    tgznme = basen +'.tgz'
+    cmd = 'tar cfz %s/%s %s'%(dest, tgznme, globstr)
+    os.chdir(pth)
+    logging.info(cmd)
+    os.chdir(startdir)
+    return cmd
+
+def get_field_date(raw):
+    with tarfile.open(raw, "r:gz") as tar:
+        for member in tar:
+            if '.IMA' in member.name and not '._' in member.name:
+                tmpf = tar.extractfile(member.name)
+                plan = dicom.read_file(tmpf)
+                field = plan.MagneticFieldStrength.original_string
+                date = plan.SeriesDate
+                return field, date
+
+    
+    return field, date
+
     
 if __name__ == '__main__':
 
@@ -233,4 +290,12 @@ if __name__ == '__main__':
     testing.assert_equal(True, exists)
     testing.assert_equal(sync_reconnotes,
                          '/home/jagust/cindeem/LBLSYNC/finalMRI/B12-243/scan_notes.txt')
+    exists, behavioral = get_behavioral(raw)
+    # test finding behavioral
+    testing.assert_equal(exists, True)
+    testing.assert_equal(True, 'scenetask_raw.tar' in behavioral[0])
     
+    
+    cmd = renamed_archive_copy(newnames[0], dirname)
+    
+    shutil.rmtree(tmpdir)
