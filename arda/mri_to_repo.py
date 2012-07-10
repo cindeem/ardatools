@@ -59,6 +59,8 @@ def rename_dicom(dcm, outdir):
     plan.InstanceNumber
     saves to outdir"""
     _, ext = os.path.splitext(dcm)
+    if ext == '':
+        ext = '.IMA'
     plan = dicom.read_file(dcm)
     newname = '%s_%s_%s_%05d_%05d'%(plan.PatientID,
                                     plan.ProtocolName,
@@ -94,12 +96,14 @@ def clean_tgz(infile):
     for root, dirs, files in os.walk(raw):
         if files:
             for f in files:
-                if not 'IMA' in f or f[0] == '.':
-                    # not dicom
+                try:
+                    tmpf = os.path.join(root,f)
+                    newf, plan = rename_dicom(tmpf, renamed)
+                    dcmd[newf] = [plan.StudyDate, plan.ProtocolName,
+                                  plan.MagneticFieldStrength ]
+                except:
                     continue
-                tmpf = os.path.join(root,f)
-                newf, plan = rename_dicom(tmpf, renamed)
-                dcmd[newf] = [plan.StudyDate, plan.ProtocolName, plan.MagneticFieldStrength ]
+                    
     # find unique series
     newnames = glob('%s/*001.*'%(renamed))
     newnames.sort()
@@ -243,15 +247,31 @@ def renamed_archive_copy(filename, dest):
 def get_field_date(raw):
     with tarfile.open(raw, "r:gz") as tar:
         for member in tar:
-            if '.IMA' in member.name and not '._' in member.name:
-                tmpf = tar.extractfile(member.name)
-                plan = dicom.read_file(tmpf)
-                field = plan.MagneticFieldStrength.original_string
-                date = plan.SeriesDate
-                return field, date
-
-    
+            if  not '._' in member.name or not member.name == 'raw':
+                print member.name
+                try:
+                    tmpf = tar.extractfile(member)
+                    #print tmpf
+                    plan = dicom.read_file(tmpf)
+                    field = plan.MagneticFieldStrength.original_string
+                    date = plan.SeriesDate
+                    return field, date
+                except:
+                    print member.name
+                    field = None
+                    date = None
+                    continue
+                    
     return field, date
+
+def clean_tmpdir(tmpdir):
+    try:
+        shutil.rmtree(tmpdir)
+    except:
+        os.system('chmod -R 775 %s'%(tmpdir))
+        shutil.rmtree(tmpdir)
+
+
 
     
 if __name__ == '__main__':
@@ -294,8 +314,9 @@ if __name__ == '__main__':
     # test finding behavioral
     testing.assert_equal(exists, True)
     testing.assert_equal(True, 'scenetask_raw.tar' in behavioral[0])
-    
-    
+    field, date = get_field_date(raw)
+    testing.assert_equal(field, '1.5')
+    testing.assert_equal(date, '20120604')
     cmd = renamed_archive_copy(newnames[0], dirname)
     
     shutil.rmtree(tmpdir)

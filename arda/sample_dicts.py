@@ -1,3 +1,5 @@
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
 import sys, os
 from glob import glob
 import datetime
@@ -71,14 +73,15 @@ def headermap_from_xlsfile(infile, sheet_index=0):
     header_map = get_header_map(sheet.row_slice(0))
     return header_map
 
-def simple_header(header_map):
+def simple_header(header_map,pattern = 'Patient Info::'):
     """ take the complex header map and create a simpler map
     remove redundant Patient Info::, whitespace, """
     outd = {}
     for item in header_map:
-        newname = item.replace('Patient Info::','').replace(' ','')
+        newname = item.replace(pattern,'').replace(' ','')
         outd[newname] = item
     return outd
+
         
         
 def bac_to_lbl(dataframe, header_map):
@@ -145,7 +148,7 @@ def make_dicts(dataframe):
     now = datetime.datetime.now().strftime('%Y-%b-%d-%H')
     logging.basicConfig(filename='database_check_errors-%s.log'%now, filemode='w', level=logging.DEBUG)
     logging.info('Started sample_dicts: check database')
-    shdr = simple_header(get_headermap(dataframe))
+    shdr = simple_header(get_headermap(dataframe), pattern='Samples::')
     mytypes = []
     for val, items in enumerate(zip(dataframe[shdr['SampleType']],
                                     dataframe[shdr['Radiotracer']],
@@ -246,9 +249,9 @@ def generate_sampletype_dict(dataframe, typedict, sampletype):
     sampledict = {}
     for val in typedict[sampletype]:
         values = dataframe.ix[val]
-        lblid, bacid, age, dob, date,qc = values[0], values[1], values[5], values[3], values[6],values[-2]
+        lblid, bacid, age, dob, date,qc,protocol = values[0], values[1], values[5], values[3], values[6],values[-2], values[8]
         lblid = lblid.strip('\n')#db allows users to enter newline chars
-        sampledict.setdefault(lblid, []).append([bacid, age, dob, date,qc])
+        sampledict.setdefault(lblid, []).append([bacid, age, dob, date,qc, protocol])
     return sampledict
 
 
@@ -276,19 +279,33 @@ def check_dict_repo(dict, type):
     for lblid, events in sorted(dict.items()):
         subdir = os.path.join(arda,lblid)
         if not check_dir(subdir):
-            log_dbrepo_error(lblid, 'arda missing subdir' + lblid,type)
+            prot = events[-1][-1]
+            prot = str(prot)
+            log_dbrepo_error(lblid, 'arda missing subdir' + prot ,type)
             continue
         for event in events:
-            bacid, age, dob, date,qa = event
+            bacid, age, dob, date,qa, protocol= event
             qa = str(qa)
+            protocol = str(protocol)
             if 'FAIL' in qa:
                 continue
             print 'passed qa'
-            event_dir = os.path.join(subdir, '-'.join([type, date.strftime('%b-%d-%Y'),'*'])) 
+            ## add fix to catch visit assume field strength
+            realtype= '%s*'%type
+            if type == 'MRI':
+                realtype = realtype + '_1.5_'
+            event_dir = os.path.join(subdir, realtype +  date.strftime('%Y-%m-%d'))
+            if not type == 'MRI':
+                event_dir = '%s*'%(event_dir)
             if not check_dir(event_dir, isglob=True):           
-	        log_dbrepo_error(lblid, 'missing event dir' + event_dir,type)
+	        log_dbrepo_error(lblid, 'missing event dir ' + event_dir + ' '+ protocol,type)
             else:
                 print event_dir
+
+def start_logging():
+    now = datetime.datetime.now().strftime('%Y-%b-%d-%H')
+    logging.basicConfig(filename='database_check_errors-%s.log'%now, filemode='w', level=logging.DEBUG)
+    logging.info('Log start')
 
 """
 Notes about Pandas
@@ -308,7 +325,7 @@ if __name__ == '__main__':
     #(mrid ,bloodd, pibd ,fdgd ,fmtd ,racd ,cfnd ,salivad) =main(infile)
 
     #lbl_2_bac, bac_2_lbl = make_lbl_bac_dict(infile)
-
+    start_logging()
     dataframe = dataframe_from_excel(infile)
     header_map = get_headermap(dataframe)
     lbl2bac = lbl_to_bac(dataframe, header_map)

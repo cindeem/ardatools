@@ -8,7 +8,7 @@ if __name__ == '__main__':
     arda = '/home/jagust/arda/lblid'
     syncdir = '/home/jagust/cindeem/LBLSYNC/finalPET'
     
-    tracer = 'rac'
+    tracer = 'pib'
     recons = ptr.get_recons_from_sync(tracer, syncdir)
     for recondir in recons[:]:
         subid = ptr.get_subid(recondir)
@@ -17,6 +17,7 @@ if __name__ == '__main__':
         has_ecats, ecats = ptr.glob_file(globstr, single=False)
         if not has_ecats:
             print recondir, 'no ecats'
+            continue
         ## generate string of arda output directory
         arda_dir = ptr.make_outdirname(ecats, tracer=real_tracer.upper(),
                                        arda=arda)

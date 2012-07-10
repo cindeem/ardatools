@@ -27,10 +27,10 @@ if __name__ == '__main__':
     logging.info('###USER : %s'%(user))
     
     # find all subjecs raw scans
-    scans = mtr.glob('%s/B10*/raw*.tgz'%(syncdir))
+    scans = mtr.glob('%s/B*/raw*.tgz'%(syncdir))
     scans.sort()
 
-    for raw in scans[:]:
+    for raw in scans[:1]:
         # meta data
         logging.info(raw)
         _, rawf = os.path.split(raw)
@@ -41,52 +41,64 @@ if __name__ == '__main__':
         logging.info(subid)
         visit_number = mtr.get_visit_number(raw)
         # get estimate of series field and date
-        field, date = mtr.get_field_date(raw)            
-        dirname = mtr.make_dirname(date, visit_number, field)
-        ardadir = mtr.os.path.join(arda, subid, dirname)
-        exists, _ = mtr.glob_file(ardadir)
-        if not exists:
-            os.makedirs(ardadir)
-        arda_raw = os.path.join(ardadir, rawf)
-        exists, _ = mtr.glob_file(arda_raw)
-        copy = True
-        if exists:
-            # check if update needed
-            same = mtr.compare_filedates(raw, arda_raw)
-            if same:
-                logging.info('%s and %s are same, no update'%(raw,
-                                                              arda_raw))
-                copy = False
-            else:
-                copy = True
-                mtr.clean_directory(ardadir)
-                logging.info('cleaned %s'%(ardadir))
+        
+        try:
+            field, date = mtr.get_field_date(raw)
+            dirname = mtr.make_dirname(date, visit_number, field)
+            ardadir = mtr.os.path.join(arda, subid, dirname)
+            exists, _ = mtr.glob_file(ardadir)
+            if not exists:
+                os.makedirs(ardadir)
+            arda_raw = os.path.join(ardadir, rawf)
+            exists, _ = mtr.glob_file(arda_raw)
+            copy = True
+            if exists:
+                # check if update needed
+                same = mtr.compare_filedates(raw, arda_raw)
+                if same:
+                    logging.info('%s and %s are same, no update'%(raw,
+                                                                  arda_raw))
+                    copy = False
+                else:
+                    copy = True
+                    mtr.clean_directory(ardadir)
+                    logging.info('cleaned %s'%(ardadir))
+        except:
+            copy = True
 
         if copy:
             newnames, dcmd, tmpdir = mtr.clean_tgz(raw)
             dates, protocols, field = mtr.get_info_from_dicoms(dcmd)
             # make/check good field
             single_field, field = mtr.good_set(field)
+            single_date, date = mtr.good_set(dates)
             if not single_field:
                 # has multiple field strengths in raw, fix
-                shutil.rmtree(tmpdir)
+                mtr.clean_tmpdir(tmpdir)
                 logging.error('multiple field strengths in %s, skipping'%raw)
                 continue        
-            # make/check date
-            single_date, date = mtr.good_set(dates)
-            if not single_date:
-                shutil.rmtree(tmpdir)
+            
+            elif not single_date:
+                mtr.clean_tmpdir(tmpdir)
                 # has multiple visits in raw, fix
                 logging.error('%s multiple visits, %s skipping'%(raw, dates))
                 continue
+            #dates and fields are all good
+            else:
+                dirname = mtr.make_dirname(date, visit_number, field)
+                ardadir = mtr.os.path.join(arda, subid, dirname)
+                exists, _ = mtr.glob_file(ardadir)
+                if not exists:
+                    os.makedirs(ardadir)
+                    # tar zip individual scans to destdir
+                for renamed in newnames:
+                    cmd = mtr.renamed_archive_copy(renamed, ardadir)
+                    os.system(cmd)
+                    logging.info('copied raw and converted to %s'%(ardadir))
+                    mtr.copy_file_withdate(raw, ardadir)
+                mtr.clean_tmpdir(tmpdir)
+    
             
-            # tar zip individual scans to destdir
-            for renamed in newnames:
-                cmd = mtr.renamed_archive_copy(renamed, ardadir)
-                os.system(cmd)
-            logging.info('copied raw and converted to %s'%(ardadir))
-            mtr.copy_file_withdate(raw, ardadir)
-            shutil.rmtree(tmpdir)            
         #deal with scan notes
         # scan notes
         notes_exist, sync_notes = mtr.get_scannotes_fromsync(raw, visit_number)
