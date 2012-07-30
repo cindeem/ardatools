@@ -30,7 +30,7 @@ if __name__ == '__main__':
     scans = mtr.glob('%s/B*/raw*.tgz'%(syncdir))
     scans.sort()
 
-    for raw in scans[:1]:
+    for raw in scans[:]:
         # meta data
         logging.info(raw)
         _, rawf = os.path.split(raw)
