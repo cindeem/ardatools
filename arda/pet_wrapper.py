@@ -24,7 +24,7 @@ if __name__ == '__main__':
     logging.info('###START %s :::'%__file__)
     logging.info('###USER : %s'%(user))
     
-    tracer = 'fdg'
+    tracer = 'pib'
     logging.info(tracer)
     
     recons = ptr.get_recons_from_sync(tracer, syncdir)
