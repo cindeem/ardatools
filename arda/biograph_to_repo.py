@@ -93,6 +93,22 @@ def regex_subid(string, pattern='B[0-9]{2}-[0-9]{3}'):
         raise IOError('cant find ID in %s'%(string))
   
 
+def check_reconnotes(recon):
+    """ check for existence of recon notes"""
+    pth , _ = os.path.split(recon)
+    basepth, fnme = os.path.split(pth)
+    globstr = os.path.join(basepth, fnme.replace('_', '*') + '.txt')
+    result = glob(globstr)
+    if len(result) < 1:
+        logging.error('NO RECONNOTES: %s'%globstr)
+        return None
+    elif len(result) > 1:
+        logging.error('TOO MANY RECONNOTES: %s'%globstr)
+        return None
+    else:
+        return result[0]
+    
+    
 
 if __name__ == '__main__':
     ## tests for now
@@ -110,3 +126,8 @@ if __name__ == '__main__':
     # test subid from string
     subid = regex_subid(sync_recon)
     testing.assert_equal(subid, 'B09-290')
+    # test check for recon notes
+    recon_notes = check_reconnotes(sync_recon)
+    testing.assert_true(recon_notes,
+                        '/home/jagust/cindeem/LBLSYNC/finalPET/B09-290/pib2reconnotes_biograph.txt')
+    

@@ -43,15 +43,45 @@ if __name__ == '__main__':
         # generate full output directory name
         real_tracer = bio.get_real_tracer(recon)
         dirnme = bio.make_dirname(scandate, real_tracer)
-        outdir, exists = pp.bg.make_dir(os.path.join(arda, subid),
-                                        dirname = dirnme)
+        outdir, exists = pp.bg.make_rec_dir(os.path.join(arda, subid),
+                                            dirname = dirnme)
         if not exists:
-            # direcotry didnt exist, copy files
+            # directory didnt exist, copy files
+            logging.info('%s is NEW, copy date'%outdir)
             copy = True
-        elif exists
-        #check if exists
-        # copy if not exists or if changed
-        # check for recon notes
+        else:
+            arda_tgz, arda_ntgz=bio.tgz_in_recon(outdir)
+            same_file = ptr.check_dates(tgzs, arda_tgz)
+            if same_file:
+                logging.info('%s exists, files are the same'%(outdir))
+                copy = False
+            else:
+                copy = True
+                logging.info('%s exists, files NOT same'%(outdir))
+
+        if copy:
+            ptr.copy_files_withdate(tgzs, outdir)
+            logging.info('COPIED TGZ: '%(tgzs))
+        # check for recon notes in sync
+        recon_notes = bio.check_reconnotes(recon)
+        if recon_notes is None:
+            # nothing to copy
+            continue
+        # check for recon notes in arda
+        _ , rn_fname = os.path.split(recon_notes)
+        globstr = os.path.join(outdir, rn_fname)
+        arda_reconnotes = pp.find_single_file(globstr)
         # copy recon notes if new or missing
-        
-        
+        if arda_reconnotes is None:
+            ptr.copy_file_withdate(recon_notes, outdir)
+            logging.info('No recon_notes in arda, copy %s'%(recon_notes))
+            
+        else:
+            same_recon_notes = ptr.check_dates([recon_notes],
+                                               [arda_reconnotes])
+            
+            if not same_recon_notes:
+                ptr.copy_file_withdate(recon_notes, outdir)
+                logging.info('DIFFERENT recon notes, copy %s'%(recon_notes))
+            else:
+                logging.info('%s same  in arda, NO COPY'%(recon_notes))
