@@ -18,7 +18,7 @@ import numpy.testing as testing
 
 
 
-def get_field_date(raw):
+def get_date(raw):
     """ reads a tgz file, searches for dicom, and returns
     SeriesDate field"""
     with tarfile.open(raw, "r:gz") as tar:
@@ -38,6 +38,21 @@ def get_field_date(raw):
                     
     return date
 
+def check_scandates(list):
+    """given a list of tgx files, check for scan dats and make sure they are
+    all the same)
+    """
+    alldates = [get_date(x) for x in list]
+    if not len(set(alldates)) == 1:
+        logging.error('Scan dates MISMATCH:  %s'%list)
+        logging.error(alldates)
+        raise IOError('Scan dates Mismatched: %s'%(alldates))
+    else:
+        return alldates[0]
+
+    
+    
+    
 
 def get_real_tracer(raw):
     pth, _ = os.path.split(raw)
@@ -55,3 +70,43 @@ def make_dirname(date, tracer):
     return dirname
 
 
+def tgz_in_recon(recon):
+    """ returns a list of tgz files found in recondirectory
+    and number of files found"""
+    globstr = os.path.join(recon, '*.tgz')
+    result = glob(globstr)
+    result.sort()
+    return result, len(result)
+
+
+def regex_subid(string, pattern='B[0-9]{2}-[0-9]{3}'):
+    """ find subject ID in string
+    default is LBL style SUBID
+    return subid, or raise error
+    """
+    try:
+        m = re.search(pattern, string)
+        subid = m.group()
+        return subid
+    except:
+        logging.error('cant find ID in %s'%string)
+        raise IOError('cant find ID in %s'%(string))
+  
+
+
+if __name__ == '__main__':
+    ## tests for now
+    sync_recon = '/home/jagust/cindeem/LBLSYNC/finalPET/B09-290/pib2_biograph/recon'
+    testdat = 'tests/B09-290PIBFR25TO26.tgz'
+    # Test date form tar archive
+    date = get_date(testdat)
+    testing.assert_equal(date, '20120313')
+    # test tracer from string
+    real_tracer = get_real_tracer(sync_recon)
+    testing.assert_equal(real_tracer, 'pib2_biograph')
+    # test dirname creation
+    dirnme = make_dirname(date, real_tracer)
+    testing.assert_equal(dirnme, 'PIB2_BIOGRAPH_2012-03-13')
+    # test subid from string
+    subid = regex_subid(sync_recon)
+    testing.assert_equal(subid, 'B09-290')

@@ -153,6 +153,10 @@ def make_dicts(dataframe):
     for val, items in enumerate(zip(dataframe[shdr['SampleType']],
                                     dataframe[shdr['Radiotracer']],
                                     dataframe[shdr['PETScanner']])):
+        if items[0] is np.nan:
+            #empty line
+            mytypes.append('NA')
+            continue
         if is_bad_protocol(items):
             # print to error log
             print 'BAD'
