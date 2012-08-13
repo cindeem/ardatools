@@ -8,6 +8,12 @@ import preprocessing as pp
 
 if __name__ == '__main__':
 
+    try:
+        tracer = sys.argv[1]
+    except:
+        tracer = 'pib'
+    if tracer.lower() not in ['pib', 'fdg', 'fmt','rac']:
+        raise IOError('%s not a valid tracer'%tracer)
     #arda
     arda = '/home/jagust/arda/lblid'
     syncdir = '/home/jagust/cindeem/LBLSYNC/finalPET'
@@ -24,7 +30,7 @@ if __name__ == '__main__':
     logging.info('###START %s :::'%__file__)
     logging.info('###USER : %s'%(user))
     
-    tracer = 'pib'
+    
     logging.info(tracer)
     
     recons = ptr.get_recons_from_sync(tracer, syncdir)

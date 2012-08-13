@@ -249,13 +249,13 @@ def generate_sampletype_dict(dataframe, typedict, sampletype):
     sample type (stypedict['PET-RAC-ECAT'] = [3,5,...]), 
     create a new dictionary holding
     LBLID [0], BACID [1], Age at Scan[5], DOB[3], Sample Date[6], 
-    QC[-2]"""
+    PET Scanner [11], QC[-2]"""
     sampledict = {}
     for val in typedict[sampletype]:
         values = dataframe.ix[val]
-        lblid, bacid, age, dob, date,qc,protocol = values[0], values[1], values[5], values[3], values[6],values[-2], values[8]
+        lblid, bacid, age, dob, date,qc,petscanner, protocol = values[0], values[1], values[5], values[3], values[6],values[-2], values[11], values[8]
         lblid = lblid.strip('\n')#db allows users to enter newline chars
-        sampledict.setdefault(lblid, []).append([bacid, age, dob, date,qc, protocol])
+        sampledict.setdefault(lblid, []).append([bacid, age, dob, date,qc, petscanner, protocol])
     return sampledict
 
 
@@ -274,6 +274,18 @@ def check_dir(indir, isglob=False):
             return False
             
 
+def check_dir_ecat(indir):
+    """ check for exsistence of directory indir
+    By default removes BIOGRAPH matches
+    """
+    result = glob(indir)
+    result = [x for x in result if not 'BIOG' in x]
+    if len(result) == 1:
+        return True
+    else:
+        return False
+            
+
 def check_dict_repo(dict, type):
     """ given a sample dict of type type ('MRI') 
     lblid->[[bacid, age, dob, date,qc],
@@ -288,7 +300,7 @@ def check_dict_repo(dict, type):
             log_dbrepo_error(lblid, 'arda missing subdir' + prot ,type)
             continue
         for event in events:
-            bacid, age, dob, date,qa, protocol= event
+            bacid, age, dob, date,qa, petscanner, protocol= event
             qa = str(qa)
             protocol = str(protocol)
             if 'FAIL' in qa:
@@ -298,10 +310,22 @@ def check_dict_repo(dict, type):
             realtype= '%s*'%type
             if type == 'MRI':
                 realtype = realtype + '_1.5_'
-            event_dir = os.path.join(subdir, realtype +  date.strftime('%Y-%m-%d'))
-            if not type == 'MRI':
-                event_dir = '%s*'%(event_dir)
-            if not check_dir(event_dir, isglob=True):           
+            if 'PET' in type:
+                realtype = type.split('-')[1] + '*'
+                if petscanner.upper() == 'BIOG':
+                    realtype = realtype + 'BIOG' +'*'
+            
+            event_dir = os.path.join(subdir, realtype +  date.strftime('%Y-%m-%d')+ '*' )
+            
+            if petscanner.upper() == 'ECAT':
+                if protocol == 'Chemotherapy':
+                    # we dont store these
+                    continue
+                direxists = check_dir_ecat(event_dir)
+            else:
+                direxists = check_dir(event_dir, isglob=True)
+                
+            if not direxists: 
 	        log_dbrepo_error(lblid, 'missing event dir ' + event_dir + ' '+ protocol,type)
             else:
                 print event_dir
@@ -340,4 +364,6 @@ if __name__ == '__main__':
     mrid = generate_sampletype_dict(dataframe, typed, 'MRI')
     check_dict_repo(mrid, 'MRI')
     fdgd = generate_sampletype_dict(dataframe, typed, 'PET-FDG-ECAT')
-    check_dict_repo(fdgd, 'FDG') 
+    check_dict_repo(fdgd, 'PET-FDG-ECAT')
+    fdgd = generate_sampletype_dict(dataframe, typed, 'PET-FDG-BIOG')
+    check_dict_repo(fdgd, 'PET-FDG-BIOG') 
