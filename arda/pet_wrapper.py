@@ -16,7 +16,7 @@ if __name__ == '__main__':
         raise IOError('%s not a valid tracer'%tracer)
     #arda
     arda = '/home/jagust/arda/lblid'
-    syncdir = '/home/jagust/cindeem/LBLSYNC/finalPET'
+    syncdir = '/home/jagust/LBL/finalPET'
     logdir , _ = os.path.split(syncdir)
     #set up log
     cleantime = asctime().replace(' ','-').replace(':', '-')

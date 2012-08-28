@@ -297,6 +297,11 @@ def check_dict_repo(dict, type):
         if not check_dir(subdir):
             prot = events[-1][-1]
             prot = str(prot)
+            if 'Chemo' in prot or 'Dopamine' in prot:
+                # we dont store these on arda
+                print 'skipping ', lblid, prot
+                continue
+            
             log_dbrepo_error(lblid, 'arda missing subdir' + prot ,type)
             continue
         for event in events:
@@ -306,6 +311,7 @@ def check_dict_repo(dict, type):
             if 'FAIL' in qa:
                 continue
             print 'passed qa'
+            
             ## add fix to catch visit assume field strength
             realtype= '%s*'%type
             if type == 'MRI':
@@ -318,9 +324,6 @@ def check_dict_repo(dict, type):
             event_dir = os.path.join(subdir, realtype +  date.strftime('%Y-%m-%d')+ '*' )
             
             if petscanner.upper() == 'ECAT':
-                if protocol == 'Chemotherapy':
-                    # we dont store these
-                    continue
                 direxists = check_dir_ecat(event_dir)
             else:
                 direxists = check_dir(event_dir, isglob=True)
