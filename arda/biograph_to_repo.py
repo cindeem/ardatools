@@ -55,8 +55,11 @@ def check_scandates(list):
     
 
 def get_real_tracer(raw):
+    """ get tracer type and visit, check for NIFD"""        
     pth, _ = os.path.split(raw)
     _, tracer = os.path.split(pth)
+    if 'NIFD' in raw:
+        return 'NIFD' + tracer
     return tracer
 
 
@@ -97,7 +100,12 @@ def check_reconnotes(recon):
     """ check for existence of recon notes"""
     pth , _ = os.path.split(recon)
     basepth, fnme = os.path.split(pth)
-    globstr = os.path.join(basepth, fnme.replace('_', '*') + '.txt')
+    if 'NIFD' in recon:
+        fnme = fnme.split('_')        
+        globstr = os.path.join(basepth,
+                               '%sNIFD*%s*'%(fnme[0],fnme[1]) + '.txt')
+    else:
+        globstr = os.path.join(basepth, fnme.replace('_', '*') + '.txt')
     result = glob(globstr)
     if len(result) < 1:
         logging.error('NO RECONNOTES: %s'%globstr)

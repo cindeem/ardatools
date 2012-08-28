@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     #arda
     arda = '/home/jagust/arda/lblid'
-    syncdir = '/home/jagust/cindeem/LBLSYNC/finalPET'
+    syncdir = '/home/jagust/LBL/finalPET'
     logdir , _ = os.path.split(syncdir)
     #set up log
     cleantime = asctime().replace(' ','-').replace(':', '-')
@@ -28,7 +28,7 @@ if __name__ == '__main__':
     logging.info('###USER : %s'%(user))
     
     # find all subjecs recon directories
-    recons = bio.glob('%s/B*/*bio*/recon'%(syncdir))
+    recons = bio.glob('%s/B*/*bio*/*recon'%(syncdir))
     recons.sort()
 
     for recon in recons:
