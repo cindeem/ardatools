@@ -107,7 +107,7 @@ def check_reconnotes(recon):
     else:
         globstr = os.path.join(basepth, fnme.replace('_', '*') + '.txt')
     result = glob(globstr)
-    if 'NIFD' in recon:
+    if not 'NIFD' in recon:
         result = [x for x in result if not 'NIFD' in x]
     if len(result) < 1:
         logging.error('NO RECONNOTES: %s'%globstr)
