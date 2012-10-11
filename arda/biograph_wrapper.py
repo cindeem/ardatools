@@ -30,6 +30,9 @@ if __name__ == '__main__':
     # find all subjecs recon directories
     recons = bio.glob('%s/B*/*bio*/*recon'%(syncdir))
     recons.sort()
+    # find all subjects biograph directories in arda
+    biographs = bio.glob('%s/B*/*BIO*'%arda)
+    biographs.sort()
 
     for recon in recons:
         # Get subid
@@ -50,6 +53,8 @@ if __name__ == '__main__':
             logging.info('%s is NEW, copy date'%outdir)
             copy = True
         else:
+            biographs.remove(outdir)
+            
             arda_tgz, arda_ntgz=bio.tgz_in_recon(outdir)
             same_file = ptr.check_dates(tgzs, arda_tgz)
             if same_file:
@@ -85,3 +90,13 @@ if __name__ == '__main__':
                 logging.info('DIFFERENT recon notes, copy %s'%(recon_notes))
             else:
                 logging.info('%s same  in arda, NO COPY'%(recon_notes))
+    ## log any biographs not found
+    if len(biographs) > 0:
+    
+        logfile = os.path.join(logdir,'logs',
+                               'ARDAERROR-%s%s.log'%(__file__,
+                                                     cleantime))
+        with open(logfile, 'w+') as fid:
+            for item in biogrphs:
+                fid.write('%s,\n'%item)
+                
