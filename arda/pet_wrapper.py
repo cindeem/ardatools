@@ -78,6 +78,8 @@ if __name__ == '__main__':
             ptr.copy_file_withdate(reconnotes_rsync, os.path.join(arda_dir,
                                                                   recon_fname))
          
+    # clean out known problem subid
+    ardascans = [ x for x in ardascans if not 'B07-275' in x]
     if len(ardascans) > 0:
         logfile = os.path.join(logdir,'logs',
                                'ARDAERROR-%s_%s%s.log'%(tracer,
