@@ -32,6 +32,12 @@ if __name__ == '__main__':
     
     
     logging.info(tracer)
+
+    # find scans on arda
+    ardascans = ptr.glob('%s/B*/*%s*'%(arda, tracer.upper()))
+    ardascans = [x for x in ardascans if not 'BIO' in x]
+    ardascans.sort()
+                         
     
     recons = ptr.get_recons_from_sync(tracer, syncdir)
     for recondir in recons[:]:
@@ -47,7 +53,13 @@ if __name__ == '__main__':
         
         arda_dir = ptr.make_outdirname(ecats, tracer=real_tracer.upper(),
                                        arda=arda)
+        if pp.os.path.isdir(arda_dir):
+            try:
+                ardascans.remove(arda_dir)
+            except:
+                ardascans.append(recondir)
         exists, orig_ecats = ptr.glob_file('%s/*.v'%arda_dir, single=False)
+        
         same = ptr.check_dates(ecats, orig_ecats)
         has_recon, reconnotes_rsync = ptr.get_reconnotes_fromsync(recondir,
                                                                   real_tracer)
@@ -65,4 +77,13 @@ if __name__ == '__main__':
             
             ptr.copy_file_withdate(reconnotes_rsync, os.path.join(arda_dir,
                                                                   recon_fname))
-            
+         
+    if len(ardascans) > 0:
+        logfile = os.path.join(logdir,'logs',
+                               'ARDAERROR-%s_%s%s.log'%(tracer,
+                                                        __file__,
+                                                        cleantime))
+
+        with open(logfile, 'w+') as fid:
+            for item in ardascans:
+                fid.write('%s,\n'%item)

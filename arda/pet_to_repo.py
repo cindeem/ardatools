@@ -306,11 +306,19 @@ def check_recon_notes(newnotes, orignotes):
 
     
 def get_recons_from_sync(tracer, root):
+    goodrecons = ['recon', 'NIFDrecon']
     if tracer == 'fmt':
         globstr = os.path.join(root, 'B*/%s*/recon/4mm'%(tracer))
     else:
         globstr = os.path.join(root, 'B*/%s*/*recon'%(tracer))
     recons = glob(globstr)
+    # remove biographs
+    recons = [x for x in recons if not 'biograph' in x]
+
+    if not tracer == 'fmt':
+        # only allow proper recon names
+        # only valid for non-fmt scans
+        recons = [x for x in recons if os.path.split(x)[-1] in goodrecons]
     recons.sort()
     return recons
 
