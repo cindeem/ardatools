@@ -68,9 +68,12 @@ if __name__ == '__main__':
         copy = ptr.check_recon_notes(recon_fname, orig_notes)
         print 'same',same, 'copy reconnotes', copy, arda_dir
         logging.info(arda_dir)
-        logging.info('Files Same %s: %s'%(arda_dir, same))
-        logging.info('%s Copy ReconNotes: %s (exists: %s)'%(subid, copy,has_recon))
+        logging.info('Same Files (%s): %s'%(same, arda_dir))
+        logging.info('%s Copy ReconNotes: %s (exists: %s)'%(subid, copy,
+                                                            has_recon))
         if not same:  #copy ecats to new dir
+            logging.info('NEW COPY: %s, %s'%(subid,
+                                             os.path.split(arda_dir)[-1]))
             ptr.update_outdir(arda_dir, clobber=True)
             ptr.copy_files_withdate(ecats, arda_dir)
         if copy and has_recon:
