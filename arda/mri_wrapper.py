@@ -61,8 +61,8 @@ if __name__ == '__main__':
                 # check if update needed
                 same = mtr.compare_filedates(raw, arda_raw)
                 if same:
-                    logging.info('%s and %s are same, no update'%(raw,
-                                                                  arda_raw))
+                    logging.info('SAME: %s and %s , no update'%(raw,
+                                                                arda_raw))
                     copy = False
                 else:
                     copy = True
@@ -94,8 +94,11 @@ if __name__ == '__main__':
                 ardadir = mtr.os.path.join(arda, subid, dirname)
                 exists, _ = mtr.glob_file(ardadir)
                 if not exists:
+                    logging.info('NEW: %s'%ardadir)
                     os.makedirs(ardadir)
                     # tar zip individual scans to destdir
+                else:
+                    logging.info('UPDATE: %s'%(ardadir))
                 for renamed in newnames:
                     cmd = mtr.renamed_archive_copy(renamed, ardadir)
                     os.system(cmd)

@@ -21,7 +21,9 @@ if __name__ == '__main__':
     #set up log
     cleantime = asctime().replace(' ','-').replace(':', '-')
     logfile = os.path.join(logdir,'logs',
-                           '%s%s.log'%(__file__,cleantime))
+                           '%s_%s_%s.log'%(tracer,
+                                           __file__,
+                                           cleantime))
     
     log_settings = pp.get_logging_configdict(logfile)
     logging.config.dictConfig(log_settings)
