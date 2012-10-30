@@ -1,3 +1,4 @@
+#!/usr/local/epd/bin/python
 import sys, os
 sys.path.insert(0, '/home/jagust/cindeem/CODE/ARDA/ardatools/arda')
 import pet_to_repo as ptr
