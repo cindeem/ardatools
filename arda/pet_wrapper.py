@@ -92,6 +92,7 @@ if __name__ == '__main__':
                                                         __file__,
                                                         cleantime))
 
-        with open(logfile, 'w+') as fid:
+        fid = open(logfile, 'w+')
             for item in ardascans:
                 fid.write('%s,\n'%item)
+        fid.close()
