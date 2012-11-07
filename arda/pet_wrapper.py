@@ -20,10 +20,11 @@ if __name__ == '__main__':
     syncdir = '/home/jagust/LBL/finalPET'
     logdir , _ = os.path.split(syncdir)
     #set up log
+    _, fname = os.path.split(__file__)
     cleantime = asctime().replace(' ','-').replace(':', '-')
     logfile = os.path.join(logdir,'logs',
                            '%s_%s_%s.log'%(tracer,
-                                           __file__,
+                                           fname.replace('.py',''),
                                            cleantime))
     
     log_settings = pp.get_logging_configdict(logfile)
@@ -93,6 +94,6 @@ if __name__ == '__main__':
                                                         cleantime))
 
         fid = open(logfile, 'w+')
-            for item in ardascans:
-                fid.write('%s,\n'%item)
+        for item in ardascans:
+            fid.write('%s,\n'%item)
         fid.close()
