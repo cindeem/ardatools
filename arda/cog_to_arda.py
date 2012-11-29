@@ -55,6 +55,29 @@ def check_arda_dir(row, session, headers):
     else:
         return cogdir, True
 
+def check_dob(cogdir, dob):
+    subdir,_ = os.path.split(cogdir)
+    dobf = os.path.join(subdir, '.DOB-%s'%dob)
+    current_dob = glob('%s/.DOB-*'%subdir)
+    if len(current_dob) < 1:
+        os.system('touch %s'%dobf)
+        return
+    if not current_dob[0] == dobf: #dob dont match
+        raise IOError('DOB mismatch, old: %s, new: %s'%(current_dob[0],
+                                                        dobf))
+        
+def check_bac(cogdir, bac):
+    subdir,_ = os.path.split(cogdir)
+    bacf = os.path.join(subdir, bac)
+    current_bac = glob('%s/BAC*'%subdir)
+    if len(current_bac) < 1:
+        os.system('touch %s'%bacf)
+        return
+    if not current_bac[0] == bacf: #dob dont match
+        raise IOError('DOB mismatch, old: %s, new: %s'%(current_bac[0],
+                                                        bacf))
+            
+    
 def main(infile, session):
     if not check_file_session(infile, session):
         raise IOError('Session number: %d does not match file %s'(session,
@@ -66,6 +89,14 @@ def main(infile, session):
     for rown in goodrows:
         row = dataframe.ix[rown]
         cogdir, exists = check_arda_dir(row, session, headers)
+        # check birthdate
+        dobh = header_key_find(headers, identifier='Birthday') 
+        dob = row[dobh].strftime('%Y-%m-%d')
+        check_dob(cogdir, dob)
+        # check BAC
+        bach = header_key_find(headers, identifier='BAC')
+        bacid = row[bach]
+        check_bac(cogdir, bacid)
         if not exists:
             # save data to directory
             tmp = pandas.DataFrame(row)
