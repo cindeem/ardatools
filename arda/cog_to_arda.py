@@ -29,7 +29,9 @@ def find_valid_data(small):
     date = header_key_find(headers, identifier='Date')    
     goodrows = []
     for row in small.iterrows():
-        if not  row[1][lblid] is np.nan and not row[1][date] is np.nan:
+        print row[1]
+        
+        if type(row[1][lblid]) == type(unicode()) and type(row[1][date]) == type(datetime.datetime.now()):
             goodrows.append(row[0])
     return goodrows
 
@@ -50,8 +52,12 @@ def check_arda_dir(row, session, headers):
     testdate = row[date].strftime('%Y-%m-%d')
     cogdir = os.path.join(arda, lblid, 'COG_S%d_%s'%(session, testdate))
     if not os.path.isdir(cogdir):
-        os.mkdir(cogdir)
-        return cogdir, False
+        try:
+            os.mkdir(cogdir)
+            return cogdir, False
+        except:
+            print '%s missing . skipping'%(os.path.split(cogdir)[0])
+            return cogdir, True #skip since no lblid base dir
     else:
         return cogdir, True
 
@@ -86,6 +92,8 @@ def main(infile, session):
     headers = dataframe.columns
     small = get_smalldf(dataframe, headers)
     goodrows = find_valid_data(small)
+    #stop
+    print len(goodrows)
     for rown in goodrows:
         row = dataframe.ix[rown]
         cogdir, exists = check_arda_dir(row, session, headers)
