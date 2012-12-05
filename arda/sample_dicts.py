@@ -254,7 +254,11 @@ def generate_sampletype_dict(dataframe, typedict, sampletype):
     for val in typedict[sampletype]:
         values = dataframe.ix[val]
         lblid, bacid, age, dob, date,qc,petscanner, protocol = values[0], values[1], values[5], values[3], values[6],values[-2], values[11], values[8]
-        lblid = lblid.strip('\n')#db allows users to enter newline chars
+        try:
+            lblid = lblid.strip('\n')#db allows users to enter newline chars
+        except:
+            print 'BAD LBLID %s'%val
+            continue
         sampledict.setdefault(lblid, []).append([bacid, age, dob, date,qc, petscanner, protocol])
     return sampledict
 
