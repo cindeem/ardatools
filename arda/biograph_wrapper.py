@@ -66,6 +66,7 @@ if __name__ == '__main__':
                 logging.info('%s exists, files NOT same'%(outdir))
 
         if copy:
+            os.system('rm %s/*'%(outdir))
             ptr.copy_files_withdate(tgzs, outdir)
             logging.info('COPIED TGZ: '%(tgzs))
         # check for recon notes in sync
@@ -91,6 +92,11 @@ if __name__ == '__main__':
                 logging.info('DIFFERENT recon notes, copy %s'%(recon_notes))
             else:
                 logging.info('%s same  in arda, NO COPY'%(recon_notes))
+        # check for timing file
+        timing_file = bio.check_pib_timing(recon)
+        if not timing_file is None:
+            logging.info('copied %s'%timing_file)
+            ptr.copy_file_withdate(timing_file, outdir)
     ## log any biographs not found
     if len(biographs) > 0:
     
@@ -98,6 +104,6 @@ if __name__ == '__main__':
                                'ARDAERROR-%s%s.log'%(__file__,
                                                      cleantime))
         with open(logfile, 'w+') as fid:
-            for item in biogrphs:
+            for item in biographs:
                 fid.write('%s,\n'%item)
                 

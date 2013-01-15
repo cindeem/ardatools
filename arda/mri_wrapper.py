@@ -1,6 +1,5 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-#!/usr/local/epd/bin/python
 import sys, os, shutil
 sys.path.insert(0, '/home/jagust/cindeem/CODE/ARDA/ardatools/arda')
 import mri_to_repo as mtr
@@ -31,10 +30,6 @@ if __name__ == '__main__':
     scans = mtr.glob('%s/B*/raw*.tgz'%(syncdir))
     scans.sort()
 
-    #find all subjects data on arda
-    ardamris = mtr.glob('%s/B*/MRI*_1.5_*'%arda)
-    ardamris.sort()
-
     for raw in scans[:]:
         # meta data
         logging.info(raw)
@@ -58,12 +53,11 @@ if __name__ == '__main__':
             exists, _ = mtr.glob_file(arda_raw)
             copy = True
             if exists:
-                ardamris.remove(ardadir)
                 # check if update needed
                 same = mtr.compare_filedates(raw, arda_raw)
                 if same:
-                    logging.info('SAME: %s and %s , no update'%(raw,
-                                                                arda_raw))
+                    logging.info('%s and %s are same, no update'%(raw,
+                                                                  arda_raw))
                     copy = False
                 else:
                     copy = True
@@ -95,11 +89,8 @@ if __name__ == '__main__':
                 ardadir = mtr.os.path.join(arda, subid, dirname)
                 exists, _ = mtr.glob_file(ardadir)
                 if not exists:
-                    logging.info('NEW: %s'%ardadir)
                     os.makedirs(ardadir)
                     # tar zip individual scans to destdir
-                else:
-                    logging.info('UPDATE: %s'%(ardadir))
                 for renamed in newnames:
                     cmd = mtr.renamed_archive_copy(renamed, ardadir)
                     os.system(cmd)
@@ -143,14 +134,3 @@ if __name__ == '__main__':
                 else:
                     logging.info('%s exists and up to date'%(arda_behav))
         logging.info('Finished %s'%subid)
-
-    ## deal with MRIS in directory that shouldnt be there
-    ardamris = [x for x in ardamris if not 'B07-275' in x]
-    if len(ardamris) > 0:
-        logfile = os.path.join(logdir,'logs',
-                               'ARDAERROR-%s%s.log'%(__file__,
-                                                     cleantime))
-
-        with open(logfile, 'w+') as fid:
-            for item in ardamris:
-                fid.write('%s,\n'%item)

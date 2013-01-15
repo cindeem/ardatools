@@ -117,7 +117,21 @@ def check_reconnotes(recon):
         return None
     else:
         return result[0]
-    
+
+def check_pib_timing(recon):
+    if not 'pib' in recon: # only timing files for PIB
+        return None
+    pth , _ = os.path.split(recon)
+    basepth, fnme = os.path.split(pth)
+    realtracer = get_real_tracer(recon)
+    realtracer = realtracer.split('_')[0]
+    globstr = os.path.join(basepth, '%s*timing*.csv'%realtracer.upper())
+    tfile = glob(globstr)
+    if len(tfile) == 1:
+        return tfile[0]
+    else:
+        logging.error('NO TIMING FILE %s'%globstr)
+        return None
     
 
 if __name__ == '__main__':
