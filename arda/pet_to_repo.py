@@ -193,7 +193,7 @@ def make_outdirname(petframes, tracer='', arda='/home/jagust/arda/lblid'):
     subid = get_subid(petframes[0])
     hdr = ecat.load(petframes[0]).get_header()
     scantime = datetime.datetime.fromtimestamp(int(hdr['scan_start_time']))
-    petdate = scantime.strftime('-%Y-%m-%d-%H')
+    petdate = scantime.strftime('_%Y-%m-%d-%H')
     if 'NIFD' in petframes[0]:
         petdir = 'NIFD' + tracer + petdate
     else:
