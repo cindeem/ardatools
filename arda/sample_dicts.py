@@ -90,7 +90,10 @@ def bac_to_lbl(dataframe, header_map):
     shdrmap = simple_header(header_map)# create a simpler header map
     outd =  dict(zip(dataframe[shdrmap['BACID']],
                      dataframe[shdrmap['LBNLID']]))
-    outd.pop(np.nan)# remove a non-mapping 
+    if outd.has_key(np.nan):
+        outd.pop(np.nan)# remove a non-mapping
+    if outd.has_key(None):
+        outd.pop(None)
     return outd
 
 def lbl_to_bac(dataframe, header_map):
