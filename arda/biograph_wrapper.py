@@ -56,7 +56,7 @@ if __name__ == '__main__':
         else:
             biographs.remove(outdir)
             
-            arda_tgz, arda_ntgz=bio.tgz_in_recon(outdir)
+            arda_tgz, arda_ntgz=bio.tgz_in_recon(outdir, subid)
             same_file = ptr.check_dates(tgzs, arda_tgz)
             if same_file:
                 logging.info('%s exists, files are the same'%(outdir))
