@@ -39,7 +39,7 @@ if __name__ == '__main__':
         # Get subid
         subid = bio.regex_subid(recon)
         # get tgz files
-        tgzs, ntgz = bio.tgz_in_recon(recon)
+        tgzs, ntgz = bio.tgz_in_recon(recon, subid)
         if ntgz < 1:
             logging.error('no TGZ files: %s'%(recon))
             continue

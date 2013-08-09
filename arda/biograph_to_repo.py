@@ -73,12 +73,13 @@ def make_dirname(date, tracer):
     return dirname
 
 
-def tgz_in_recon(recon):
+def tgz_in_recon(recon, subid):
     """ returns a list of tgz files found in recondirectory
     and number of files found"""
     globstr = os.path.join(recon, '*.tgz')
     result = glob(globstr)
     result.sort()
+    result = [x for x in result if subid in os.path.split(x)[-1]]
     return result, len(result)
 
 
