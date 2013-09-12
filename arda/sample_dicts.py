@@ -308,7 +308,9 @@ def check_dict_repo(dict, type):
                 # we dont store these on arda
                 print 'skipping ', lblid, prot
                 continue
-            
+            ## check if this subject is a fail
+            if all(['FAIL' in x for x in events]):
+                continue
             log_dbrepo_error(lblid, 'arda missing subdir' + prot ,type)
             continue
         for event in events:
