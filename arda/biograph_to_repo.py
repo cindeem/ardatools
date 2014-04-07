@@ -35,7 +35,7 @@ def get_date(raw):
                     print member.name
                     date = None
                     continue
-                    
+
     return date
 
 def check_scandates(list):
@@ -50,12 +50,12 @@ def check_scandates(list):
     else:
         return alldates[0]
 
-    
-    
-    
+
+
+
 
 def get_real_tracer(raw):
-    """ get tracer type and visit, check for NIFD"""        
+    """ get tracer type and visit, check for NIFD"""
     pth, _ = os.path.split(raw)
     _, tracer = os.path.split(pth)
     if 'NIFD' in raw:
@@ -95,14 +95,14 @@ def regex_subid(string, pattern='B[0-9]{2}-[0-9]{3}'):
     except:
         logging.error('cant find ID in %s'%string)
         raise IOError('cant find ID in %s'%(string))
-  
+
 
 def check_reconnotes(recon):
     """ check for existence of recon notes"""
     pth , _ = os.path.split(recon)
     basepth, fnme = os.path.split(pth)
     if 'NIFD' in recon:
-        fnme = fnme.split('_')        
+        fnme = fnme.split('_')
         globstr = os.path.join(basepth,
                                '%sNIFD*%s*'%(fnme[0],fnme[1]) + '.txt')
     else:
@@ -122,6 +122,8 @@ def check_reconnotes(recon):
 def check_pib_timing(recon):
     if not 'pib' in recon: # only timing files for PIB
         return None
+    if 'NIFD' in recon:
+        return None # no timing files for 4-frame nifd scans
     pth , _ = os.path.split(recon)
     basepth, fnme = os.path.split(pth)
     realtracer = get_real_tracer(recon)
@@ -133,7 +135,7 @@ def check_pib_timing(recon):
     else:
         logging.error('NO TIMING FILE %s'%globstr)
         return None
-    
+
 
 if __name__ == '__main__':
     ## tests for now
@@ -155,4 +157,4 @@ if __name__ == '__main__':
     recon_notes = check_reconnotes(sync_recon)
     testing.assert_true(recon_notes,
                         '/home/jagust/cindeem/LBLSYNC/finalPET/B09-290/pib2reconnotes_biograph.txt')
-    
+
