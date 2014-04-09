@@ -133,6 +133,28 @@ def file_from_zip(archive, filename):
         raise IOError('Error in unzipping {}'.format(archive))
     return ziphandle.extract(filename, path=tmpdir)
 
+def get_file_from_tar(tarfile):
+    """find filenames in tar archive
+    return open tar and files"""
+    names = []
+    tar = tarfile.open(localizer, 'r:gz')
+    for tarinfo in tar:
+    if tarinfo.isreg():
+        names.append(tarinfo.name)
+    return tar, names
+
+def info_from_tarfile(tarfile):
+    """ finds dicom in tgz archive, accesses and
+    returns
+    SeriesDate as a datetime object
+    FieldStrength as float"""
+    tar, names = get_file_from_tar(tarfile)
+    tmpf = tar.extractfile(names[0])
+    plan = dicom.read_file(tmpf.fileobj)
+    tar.close()
+    return parser.parse(plan.SeriesDate), float(plan.MagneticFieldStrength)
+
+
 
 def get_info_from_dicoms(dict):
     """given a dict of files ->[date, protocol, field]"""
