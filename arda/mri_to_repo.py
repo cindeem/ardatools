@@ -9,6 +9,7 @@ import dicom
 import datetime
 import dateutil.parser as parser
 import tempfile
+import zipfile
 import filecmp
 import tarfile
 from nipype.interfaces.base import CommandLine
@@ -29,7 +30,7 @@ def get_subid(infile):
         return None
     else:
         return m.group(0)
-     
+
 
 
 def tmp_dirs():
@@ -47,7 +48,7 @@ def untar(infile, outdir):
     """ untars given tar archive to outdir"""
     cmd = 'tar  -xzf %s --directory=%s'%(infile, outdir)
     os.system(cmd)
-    
+
 
 
 def rename_dicom(dcm, outdir):
@@ -103,7 +104,7 @@ def clean_tgz(infile):
                                   plan.MagneticFieldStrength ]
                 except:
                     continue
-                    
+
     # find unique series
     newnames = glob('%s/*001.*'%(renamed))
     newnames.sort()
@@ -116,6 +117,22 @@ def get_visit_number(raw):
     num = fname.split('.')[0].replace('raw','')
 
     return num
+
+
+def filename_from_archive(archive, globstr):
+    ziphandle = zipfile.ZipFile(archive)
+    found = [x.filename for x in ziphandle.filelist if globstr in x.filename]
+    ziphandle.close()
+    return found
+
+def file_from_zip(archive, filename):
+    tmpdir = tempfile.mkdtemp()
+    try:
+        ziphandle = zipfile.ZipFile(archive)
+    except:
+        raise IOError('Error in unzipping {}'.format(archive))
+    return ziphandle.extract(filename, path=tmpdir)
+
 
 def get_info_from_dicoms(dict):
     """given a dict of files ->[date, protocol, field]"""
@@ -149,7 +166,7 @@ def make_dirname(date, visit, field, base = 'MRI'):
     date = dt.strftime('%Y-%m-%d')
     dirname = '_'.join([base+visit, field, date])
     return dirname
-    
+
 def copy_file_withdate(file, dest):
     cmd = 'cp --preserve=timestamps %s %s'%(file, dest)
     os.system(cmd)
@@ -175,12 +192,12 @@ def md5file(filename, excludeline="", includeline=""):
     """Compute md5 hash of the specified file"""
     m = hashlib.md5()
     blocksz = 128 * m.block_size
-    with open(filename,'rb') as f: 
-        for chunk in iter(lambda: f.read(blocksz), ''): 
+    with open(filename,'rb') as f:
+        for chunk in iter(lambda: f.read(blocksz), ''):
          m.update(chunk)
     return m.hexdigest()
 
-        
+
 def glob_file(globstr, single=True):
     """globs for file specified by globstr
     if single is true, expects one file
@@ -236,7 +253,7 @@ def renamed_archive_copy(filename, dest):
     startdir = os.getcwd()
     pth, basename = os.path.split(filename)
     basen = '_'.join(basename.split('_')[:-1])
-    globstr = os.path.join(pth, basen + '*')                     
+    globstr = os.path.join(pth, basen + '*')
     tgznme = basen +'.tgz'
     cmd = 'tar cfz %s/%s %s'%(dest, tgznme, globstr)
     os.chdir(pth)
@@ -261,7 +278,7 @@ def get_field_date(raw):
                     field = None
                     date = None
                     continue
-                    
+
     return field, date
 
 def clean_tmpdir(tmpdir):
@@ -273,7 +290,7 @@ def clean_tmpdir(tmpdir):
 
 
 
-    
+
 if __name__ == '__main__':
 
     raw, renamed = tmp_dirs()
@@ -284,7 +301,7 @@ if __name__ == '__main__':
     newdcm, plan = rename_dicom(dcm, renamed)
     testing.assert_equal(newdcm, os.path.join(renamed,
                                               'B12-243_localizer_20120604_00001_00001.IMA'))
-        
+
     # clean up
     shutil.rmtree(raw)
     shutil.rmtree(renamed)
@@ -318,5 +335,5 @@ if __name__ == '__main__':
     testing.assert_equal(field, '1.5')
     testing.assert_equal(date, '20120604')
     cmd = renamed_archive_copy(newnames[0], dirname)
-    
+
     shutil.rmtree(tmpdir)
