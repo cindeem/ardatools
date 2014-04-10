@@ -12,7 +12,9 @@ import tempfile
 import zipfile
 import filecmp
 import tarfile
+import pandas
 from nipype.interfaces.base import CommandLine
+from nipype.utils.filemanip import fname_presuffix
 import logging
 
 # for testing
@@ -133,26 +135,26 @@ def file_from_zip(archive, filename):
         raise IOError('Error in unzipping {}'.format(archive))
     return ziphandle.extract(filename, path=tmpdir)
 
-def get_file_from_tar(tarfile):
+def get_file_from_tar(tarf):
     """find filenames in tar archive
     return open tar and files"""
     names = []
-    tar = tarfile.open(localizer, 'r:gz')
+    tar = tarfile.open(tarf, 'r:gz')
     for tarinfo in tar:
-    if tarinfo.isreg():
-        names.append(tarinfo.name)
+        if tarinfo.isreg():
+            names.append(tarinfo.name)
     return tar, names
 
-def info_from_tarfile(tarfile):
+def info_from_tarfile(tarf):
     """ finds dicom in tgz archive, accesses and
     returns
-    SeriesDate as a datetime object
-    FieldStrength as float"""
-    tar, names = get_file_from_tar(tarfile)
+    SeriesDate as a string ('20140214')
+    FieldStrength as string"""
+    tar, names = get_file_from_tar(tarf)
     tmpf = tar.extractfile(names[0])
     plan = dicom.read_file(tmpf.fileobj)
     tar.close()
-    return parser.parse(plan.SeriesDate), float(plan.MagneticFieldStrength)
+    return plan.SeriesDate, str(plan.MagneticFieldStrength)
 
 
 
