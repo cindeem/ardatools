@@ -3,29 +3,29 @@
 import sys, os, shutil
 sys.path.insert(0, '/home/jagust/cindeem/CODE/ARDA/ardatools/arda')
 import mri_to_repo as mtr
+import utils
 import logging, logging.config
-from time import asctime
-sys.path.insert(0,'/home/jagust/cindeem/CODE/PetProcessing')
-import preprocessing as pp
+from datetime import datetime
+
 
 if __name__ == '__main__':
 
     #arda
     arda = '/home/jagust/arda/lblid'
-    syncdir = '/home/jagust/cindeem/LBLSYNC/finalMRI'
+    syncdir = '/home/jagust/LBL/finalMRI'
     logdir , _ = os.path.split(syncdir)
     #set up log
-    cleantime = asctime().replace(' ','-').replace(':', '-')
+    cleantime = datetime.strftime(datetime.now(),'%Y-%m-%d-%H-%M')
     logfile = os.path.join(logdir,'logs',
-                           '%s%s.log'%(__file__,cleantime))
-    
-    log_settings = pp.get_logging_configdict(logfile)
+                           '%s%s.log'%(cleantime,__file__.replace('.py','')))
+
+    log_settings = utils.get_logging_configdict(logfile)
     logging.config.dictConfig(log_settings)
-    
+
     user = os.environ['USER']
     logging.info('###START %s :::'%__file__)
     logging.info('###USER : %s'%(user))
-    
+
     # find all subjecs raw scans
     scans = mtr.glob('%s/B*/raw*.tgz'%(syncdir))
     scans.sort()
@@ -37,11 +37,11 @@ if __name__ == '__main__':
         subid = mtr.get_subid(raw)
         if subid is None:
             logging.error('no subid in %s'%(raw))
-            continue        
+            continue
         logging.info(subid)
         visit_number = mtr.get_visit_number(raw)
         # get estimate of series field and date
-        
+
         try:
             field, date = mtr.get_field_date(raw)
             dirname = mtr.make_dirname(date, visit_number, field)
@@ -76,8 +76,8 @@ if __name__ == '__main__':
                 # has multiple field strengths in raw, fix
                 mtr.clean_tmpdir(tmpdir)
                 logging.error('multiple field strengths in %s, skipping'%raw)
-                continue        
-            
+                continue
+
             elif not single_date:
                 mtr.clean_tmpdir(tmpdir)
                 # has multiple visits in raw, fix
@@ -97,8 +97,8 @@ if __name__ == '__main__':
                     logging.info('copied raw and converted to %s'%(ardadir))
                     mtr.copy_file_withdate(raw, ardadir)
                 mtr.clean_tmpdir(tmpdir)
-    
-            
+
+
         #deal with scan notes
         # scan notes
         notes_exist, sync_notes = mtr.get_scannotes_fromsync(raw, visit_number)
@@ -113,11 +113,11 @@ if __name__ == '__main__':
                     logging.info('updated %s'%(arda_notes))
             else:
                 mtr.copy_file_withdate(sync_notes,ardadir)
-                logging.info('copied %s'%(arda_notes))                
+                logging.info('copied %s'%(arda_notes))
         else:
             logging.info('no scannotes for %s'%(raw))
         # behavioral
-        behav_exists, behavioral = mtr.get_behavioral(raw)        
+        behav_exists, behavioral = mtr.get_behavioral(raw)
         # deal with any behavioral
         if behav_exists:
             for behav in behavioral:

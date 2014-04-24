@@ -2,10 +2,10 @@
 import sys, os
 sys.path.insert(0, '/home/jagust/cindeem/CODE/ARDA/ardatools/arda')
 import pet_to_repo as ptr
+import utils
 import logging, logging.config
-from time import asctime
-sys.path.insert(0,'/home/jagust/cindeem/CODE/PetProcessing')
-import preprocessing as pp
+from datetime import datetime
+
 
 if __name__ == '__main__':
 
@@ -21,28 +21,29 @@ if __name__ == '__main__':
     logdir , _ = os.path.split(syncdir)
     #set up log
     _, fname = os.path.split(__file__)
-    cleantime = asctime().replace(' ','-').replace(':', '-')
+    cleantime = datetime.strftime(datetime.now(),'%Y-%m-%d-%H-%M')
     logfile = os.path.join(logdir,'logs',
-                           '%s_%s_%s.log'%(tracer,
-                                           fname.replace('.py',''),
-                                           cleantime))
-    
-    log_settings = pp.get_logging_configdict(logfile)
+                           '%s_%s_%s.log'%(cleantime,
+                                           tracer,
+                                           fname.replace('.py','')
+                                           ))
+
+    log_settings = utils.get_logging_configdict(logfile)
     logging.config.dictConfig(log_settings)
-    
+
     user = os.environ['USER']
     logging.info('###START %s :::'%__file__)
     logging.info('###USER : %s'%(user))
-    
-    
+
+
     logging.info(tracer)
 
     # find scans on arda
     ardascans = ptr.glob('%s/B*/*%s*'%(arda, tracer.upper()))
     ardascans = [x for x in ardascans if not 'BIO' in x]
     ardascans.sort()
-                         
-    
+
+
     recons = ptr.get_recons_from_sync(tracer, syncdir)
     for recondir in recons[:]:
         subid = ptr.get_subid(recondir)
@@ -54,16 +55,16 @@ if __name__ == '__main__':
             logging.error('NO ECATS: %s'%recondir)
             continue
         ## generate string of arda output directory
-        
+
         arda_dir = ptr.make_outdirname(ecats, tracer=real_tracer.upper(),
                                        arda=arda)
-        if pp.os.path.isdir(arda_dir):
+        if os.path.isdir(arda_dir):
             try:
                 ardascans.remove(arda_dir)
             except:
                 ardascans.append(recondir)
         exists, orig_ecats = ptr.glob_file('%s/*.v'%arda_dir, single=False)
-        
+
         same = ptr.check_dates(ecats, orig_ecats)
         has_recon, reconnotes_rsync = ptr.get_reconnotes_fromsync(recondir,
                                                                   real_tracer)
@@ -81,10 +82,10 @@ if __name__ == '__main__':
             ptr.update_outdir(arda_dir, clobber=True)
             ptr.copy_files_withdate(ecats, arda_dir)
         if copy and has_recon:
-            
+
             ptr.copy_file_withdate(reconnotes_rsync, os.path.join(arda_dir,
                                                                   recon_fname))
-         
+
     # clean out known problem subid
     ardascans = [ x for x in ardascans if not 'B07-275' in x]
     if len(ardascans) > 0:
@@ -97,3 +98,4 @@ if __name__ == '__main__':
         for item in ardascans:
             fid.write('%s,\n'%item)
         fid.close()
+    print logfile

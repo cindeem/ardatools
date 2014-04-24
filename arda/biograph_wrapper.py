@@ -7,8 +7,7 @@ import biograph_to_repo as bio
 import pet_to_repo as ptr
 import logging, logging.config
 from time import asctime
-sys.path.insert(0,'/home/jagust/cindeem/CODE/PetProcessing')
-import preprocessing as pp
+import utils
 
 if __name__ == '__main__':
 
@@ -20,14 +19,14 @@ if __name__ == '__main__':
     cleantime = asctime().replace(' ','-').replace(':', '-')
     logfile = os.path.join(logdir,'logs',
                            '%s%s.log'%(__file__,cleantime))
-    
-    log_settings = pp.get_logging_configdict(logfile)
+
+    log_settings = utils.get_logging_configdict(logfile)
     logging.config.dictConfig(log_settings)
-    
+
     user = os.environ['USER']
     logging.info('###START %s :::'%__file__)
     logging.info('###USER : %s'%(user))
-    
+
     # find all subjecs recon directories
     recons = bio.glob('%s/B*/*bio*/*recon'%(syncdir))
     recons.sort()
@@ -47,7 +46,7 @@ if __name__ == '__main__':
         # generate full output directory name
         real_tracer = bio.get_real_tracer(recon)
         dirnme = bio.make_dirname(scandate, real_tracer)
-        outdir, exists = pp.bg.make_rec_dir(os.path.join(arda, subid),
+        outdir, exists = utils.make_rec_dir(os.path.join(arda, subid),
                                             dirname = dirnme)
         if not exists:
             # directory didnt exist, copy files
@@ -55,7 +54,7 @@ if __name__ == '__main__':
             copy = True
         else:
             biographs.remove(outdir)
-            
+
             arda_tgz, arda_ntgz=bio.tgz_in_recon(outdir, subid)
             same_file = ptr.check_dates(tgzs, arda_tgz)
             if same_file:
@@ -77,16 +76,16 @@ if __name__ == '__main__':
         # check for recon notes in arda
         _ , rn_fname = os.path.split(recon_notes)
         globstr = os.path.join(outdir, rn_fname)
-        arda_reconnotes = pp.find_single_file(globstr)
+        arda_reconnotes = utils.find_single_file(globstr)
         # copy recon notes if new or missing
         if arda_reconnotes is None:
             ptr.copy_file_withdate(recon_notes, outdir)
             logging.info('No recon_notes in arda, copy %s'%(recon_notes))
-            
+
         else:
             same_recon_notes = ptr.check_dates([recon_notes],
                                                [arda_reconnotes])
-            
+
             if not same_recon_notes:
                 ptr.copy_file_withdate(recon_notes, outdir)
                 logging.info('DIFFERENT recon notes, copy %s'%(recon_notes))
@@ -99,11 +98,11 @@ if __name__ == '__main__':
             ptr.copy_file_withdate(timing_file, outdir)
     ## log any biographs not found
     if len(biographs) > 0:
-    
+
         logfile = os.path.join(logdir,'logs',
                                'ARDAERROR-%s%s.log'%(__file__,
                                                      cleantime))
         with open(logfile, 'w+') as fid:
             for item in biographs:
                 fid.write('%s,\n'%item)
-                
+

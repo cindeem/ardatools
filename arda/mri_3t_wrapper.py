@@ -3,14 +3,12 @@
 import sys, os, shutil
 from glob import glob
 import logging, logging.config
-from time import asctime
+from datetime import datetime
 import pandas
 
 sys.path.insert(0, '/home/jagust/cindeem/CODE/ARDA/ardatools/arda')
 import mri_to_repo as mtr
-
-sys.path.insert(0,'/home/jagust/cindeem/CODE/PetProcessing')
-import preprocessing as pp
+import utils
 
 
 def is_bacs(instr):
@@ -42,14 +40,14 @@ if __name__ == '__main__':
     #arda
     arda = '/home/jagust/arda/lblid'
     syncdir = '/home/jagust/LBL/3T'
-    mapfile = '/home/jagust/cindeem/Dropbox/arda/Cindee_LBL_BAC_IDs_4_9_14.xlsx'
+    mapfile = '/home/jagust/LBL/3T/LBL_BAC_IDS.xlsx'
     logdir = os.path.join(syncdir, 'logs')
     #set up log
-    cleantime = asctime().replace(' ','-').replace(':', '-')
+    cleantime = datetime.strftime(datetime.now(),'%Y-%m-%d-%H-%M')
     logfile = os.path.join(logdir,
                            '%s%s.log'%(__file__,cleantime))
 
-    log_settings = pp.get_logging_configdict(logfile)
+    log_settings = utils.get_logging_configdict(logfile)
     logging.config.dictConfig(log_settings)
 
     user = os.environ['USER']
