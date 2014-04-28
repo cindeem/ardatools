@@ -31,7 +31,7 @@ tracer = 'fdg'
 get ecats
 generate output directory
 check if output directory exists on arda
-if not, 
+if not,
    create new dated PET dir <TRACER>_date_time
    copy relevant files
 if yes,
@@ -49,14 +49,14 @@ Check reconnotes:
         copy
     if yes:
         do nothing
-   
+
 
    ## TODO  shold check date of pet files, or check date of
 
 """
 def save_json(filename, data):
     """Save data to a json file
-    
+
     Parameters
     ----------
     filename : str
@@ -81,7 +81,7 @@ def load_json(filename):
     Returns
     -------
     data : dict
-   
+
     """
     fp = file(filename, 'r')
     data = json.load(fp)
@@ -93,8 +93,8 @@ def md5file(filename, excludeline="", includeline=""):
     """Compute md5 hash of the specified file"""
     m = hashlib.md5()
     blocksz = 128 * m.block_size
-    with open(filename,'rb') as f: 
-        for chunk in iter(lambda: f.read(blocksz), ''): 
+    with open(filename,'rb') as f:
+        for chunk in iter(lambda: f.read(blocksz), ''):
          m.update(chunk)
     return m.hexdigest()
 
@@ -115,7 +115,7 @@ def check_hash(filelist, jsonfile):
     hashmatch : Bool
         True if hash dictionaries are equal
         False if no jsonfile or dict not equal
-    
+
     jsondict  : dict
         dictionary that can be written to jsonfile
     """
@@ -123,7 +123,7 @@ def check_hash(filelist, jsonfile):
     for f in filelist:
         filehash = md5file(f)
         jsondict.update({f: filehash})
-    
+
     if not os.path.exists(jsonfile):
         # json was never created
         hashmatch = False
@@ -154,7 +154,7 @@ def copy_file_withdate(file, dest):
 def copy_files_withdate(files, dest):
     for f in files:
         copy_file_withdate(f, dest)
-    
+
 def modification_date(filename):
     """returns modification date of filename"""
     t = os.path.getmtime(filename)
@@ -167,7 +167,7 @@ def compare_filedates(infile, original_file):
     modtime_infile = modification_date(infile)
     modtime_orig = modification_date(original_file)
     return modtime_infile == modtime_orig
-        
+
 
 def get_subid(infile):
     """ parse filepath string like this:
@@ -181,7 +181,7 @@ def get_subid(infile):
         return None
     else:
         return m.group(0)
-     
+
 
 def make_outdirname(petframes, tracer='', arda='/home/jagust/arda/lblid'):
     """ given list of subjects pet files
@@ -205,7 +205,7 @@ def age_from_ecat(petframes):
     """ data in header is not robust, do not use this
     given list of frames
     gets dob, scantime to get age at scan
-    hdr = ecat.load(petframes[0]).get_header()    
+    hdr = ecat.load(petframes[0]).get_header()
     """
     pass
 
@@ -218,7 +218,7 @@ def update_outdir(outdir, clobber=True):
         shutil.rmtree(outdir)
     if not os.path.isdir(outdir):
         os.makedirs(outdir) #in case multiple level dir
-    
+
 
 def glob_file(globstr, single=True):
     """globs for file specified by globstr
@@ -251,7 +251,7 @@ def get_reconnotes_fromsync(recondir, tracer):
         print 'get_recon notes', recondir
     else:
         nifd = ''
-    basepath, _ = recondir.split('/%s/'%tracer)    
+    basepath, _ = recondir.split('/%s/'%tracer)
     globstr = os.path.join(basepath, '%s%sreconnotes.txt'%(nifd,tracer))
     exists, reconf = glob_file(globstr)
     return exists, reconf
@@ -267,7 +267,7 @@ def get_real_tracer(recondir):
     real_tracer = parts[-2]
 
     return real_tracer
-    
+
 def gen_recon_fname(flist, destdir, tracer = ''):
     """given list of file names
     find the last mod date
@@ -304,7 +304,7 @@ def check_recon_notes(newnotes, orignotes):
     except:
         return True
 
-    
+
 def get_recons_from_sync(tracer, root):
     goodrecons = ['recon', 'NIFDrecon']
     if tracer == 'fmt':
@@ -359,4 +359,4 @@ if __name__ == '__main__':
     tracer = 'fdg'
     syncdir = '/home/jagust/cindeem/LBLSYNC/finalPET'
     recons = get_recons_from_sync(tracer, syncdir)
-    
+

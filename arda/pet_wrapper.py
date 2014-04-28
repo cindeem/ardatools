@@ -9,12 +9,14 @@ from datetime import datetime
 
 if __name__ == '__main__':
 
+    tracers = ['pib', 'fdg', 'fmt','rac', 'tau']
     try:
         tracer = sys.argv[1]
     except:
-        tracer = 'pib'
-    if tracer.lower() not in ['pib', 'fdg', 'fmt','rac']:
+        raise IOError('Need to pass tracer type: {}'.format(tracers))
+    if tracer.lower() not in tracers:
         raise IOError('%s not a valid tracer'%tracer)
+        sys.exit()
     #arda
     arda = '/home/jagust/arda/lblid'
     syncdir = '/home/jagust/LBL/finalPET'
@@ -45,6 +47,10 @@ if __name__ == '__main__':
 
 
     recons = ptr.get_recons_from_sync(tracer, syncdir)
+    if len(recons) < 1:
+        print 'No files found {}: {}'.format(tracer, syncdir)
+        logging.error('No files found {}: {}'.format(tracer, syncdir))
+        sys.exit()
     for recondir in recons[:]:
         subid = ptr.get_subid(recondir)
         real_tracer = ptr.get_real_tracer(recondir)
