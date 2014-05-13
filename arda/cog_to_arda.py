@@ -28,11 +28,13 @@ def find_valid_data(small):
     lblid = header_key_find(headers, identifier='LBNL')
     date = header_key_find(headers, identifier='Date')    
     goodrows = []
-    for row in small.iterrows():
-        print row[1]
+    for nrow, row in small.iterrows():
+        #print row[1]
         
-        if type(row[1][lblid]) == type(unicode()) and type(row[1][date]) == type(datetime.datetime.now()):
-            goodrows.append(row[0])
+        if isinstance(row[lblid], unicode) and not isinstance(row[date],
+                pandas.tslib.NaTType):
+            goodrows.append(nrow)
+            #print row
     return goodrows
 
 def get_smalldf(dataframe, headers):
@@ -93,10 +95,11 @@ def main(infile, session):
     small = get_smalldf(dataframe, headers)
     goodrows = find_valid_data(small)
     #stop
-    print len(goodrows)
+    print 'number of good data:', len(goodrows)
     for rown in goodrows:
         row = dataframe.ix[rown]
         cogdir, exists = check_arda_dir(row, session, headers)
+        print exists, cogdir
         # check birthdate
         dobh = header_key_find(headers, identifier='Birthday') 
         dob = row[dobh].strftime('%Y-%m-%d')
